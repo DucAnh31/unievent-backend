@@ -1,3 +1,17 @@
+server:
+  port: 8080
 spring:
   application:
     name: unievent
+  datasource:
+    url: ${DBMS_CONNECTION}
+    username: ${DBMS_USERNAME}
+    password: ${DMS_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  valid-duration: 60000 # second
+  refresh-duration: 120000 # second
