@@ -11,7 +11,10 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  redis:
+    host: localhost
+    port: 6379
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  valid-duration: 60000 # second
-  refresh-duration: 120000 # second
+  valid-duration: 60000 # ms
+  refresh-duration: 120000 # ms

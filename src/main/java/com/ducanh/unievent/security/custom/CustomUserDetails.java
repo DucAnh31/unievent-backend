@@ -1,5 +1,6 @@
 package com.ducanh.unievent.security.custom;
 
+import com.ducanh.unievent.common.enums.UserStatus;
 import com.ducanh.unievent.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -14,13 +15,21 @@ public class CustomUserDetails implements UserDetails {
     private String password;
     private String email;
     private Collection<? extends GrantedAuthority> authorities;
+    private UserStatus status;
 
-    private CustomUserDetails(Long id, String username, String password, String email, Collection<? extends GrantedAuthority> authorities) {
+    private CustomUserDetails(
+            Long id,
+            String username,
+            String password,
+            String email,
+            Collection<? extends GrantedAuthority> authorities,
+            UserStatus status) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
         this.authorities = authorities;
+        this.status = status;
     }
 
     public static CustomUserDetails build(User user) {
@@ -31,7 +40,8 @@ public class CustomUserDetails implements UserDetails {
                 user.getUsername(),
                 user.getPassword(),
                 user.getEmail(),
-                authorities
+                authorities,
+                user.getStatus()
         );
     }
 
@@ -69,5 +79,5 @@ public class CustomUserDetails implements UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() { return status == UserStatus.ACTIVE; }
 }

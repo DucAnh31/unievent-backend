@@ -7,12 +7,10 @@ import com.ducanh.unievent.dto.request.LogoutRequest;
 import com.ducanh.unievent.dto.request.RefreshTokenRequest;
 import com.ducanh.unievent.dto.request.RegisterRequest;
 import com.ducanh.unievent.dto.response.AuthenticationResponse;
-import com.ducanh.unievent.entity.RefreshToken;
 import com.ducanh.unievent.entity.User;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.UserMapper;
-import com.ducanh.unievent.repository.RefreshTokenRepository;
 import com.ducanh.unievent.repository.UserRepository;
 import com.ducanh.unievent.security.custom.CustomUserDetails;
 import com.ducanh.unievent.security.custom.CustomUserDetailsService;
@@ -39,7 +37,6 @@ public class AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional
     public AuthenticationResponse login(LoginRequest request)
     {
         Authentication authentication =
@@ -53,11 +50,11 @@ public class AuthService {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         String accessToken = jwtService.generateToken(userDetails);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(request.getIdentifier());
+        String refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(refreshToken)
                 .build();
     }
 
@@ -80,38 +77,36 @@ public class AuthService {
         CustomUserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
 
         String accessToken = jwtService.generateToken(userDetails);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getUsername());
+        String refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(refreshToken)
                 .build();
 
 
     }
 
-    @Transactional
+
     public AuthenticationResponse refreshToken(RefreshTokenRequest request)
     {
-        RefreshToken oldRefreshToken = refreshTokenService.findRefreshToken(request.getToken());
+        Long userId = refreshTokenService.verifyAndGetUserId(request.getToken());
 
-        refreshTokenService.verifyRefreshToken(oldRefreshToken);
+        User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        oldRefreshToken.setRevoked(true);
-        User user = oldRefreshToken.getUser();
+        CustomUserDetails userDetails = CustomUserDetails.build(user);
+        if(!userDetails.isEnabled())
+            throw new ApiException(ErrorCode.ACCOUNT_DISABLED);
 
-        CustomUserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-
-        String accessToken = jwtService.generateToken(userDetails);
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getUsername());
+        String newAccessToken = jwtService.generateToken(userDetails);
+        String newRefreshToken = refreshTokenService.rotateRefreshToken(request.getToken(), userId);
 
         return AuthenticationResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
                 .build();
     }
 
-    @Transactional
     public void logout(LogoutRequest request)
     {
         refreshTokenService.revokeToken(request.getRefreshToken());

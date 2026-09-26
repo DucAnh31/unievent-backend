@@ -1,10 +1,10 @@
 package com.ducanh.unievent.common.enums;
 
 public enum EventStatus {
-    DRAFT,
-    PUBLISHED,
+    DRAFT, //sua
+    PUBLISHED, //sua
+    REGISTRATION_CLOSED,
     ONGOING,
     COMPLETED,
-    CANCELLED,
-    REGISTRATION_CLOSED
+    CANCELLED
 }

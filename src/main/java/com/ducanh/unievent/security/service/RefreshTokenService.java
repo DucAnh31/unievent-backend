@@ -1,68 +1,228 @@
 package com.ducanh.unievent.security.service;
 
-import com.ducanh.unievent.entity.RefreshToken;
-import com.ducanh.unievent.entity.User;
+import com.ducanh.unievent.common.service.RedisService;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
-import com.ducanh.unievent.repository.RefreshTokenRepository;
 import com.ducanh.unievent.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
     @Value("${jwt.refresh-duration}")
     private Long refreshDuration;
 
-    private final RefreshTokenRepository refreshTokenRepository;
 
-    private final UserRepository userRepository;
+    private static String TOKEN_KEY_PREFIX = "auth:refresh:token:";
+    private static String FAMILY_KEY_PREFIX = "auth:refresh:family:";
 
-    public RefreshToken createRefreshToken(String identifier)
-    {
-        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
-                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+    private final String FIELD_USER_ID = "userId";
+    private final String FIELD_FAMILY_ID = "familyId";
+    private final String FIELD_REVOKED = "revoked";
+    private final String FIELD_STATUS = "status";
 
-        return refreshTokenRepository.save(
-                RefreshToken.builder()
-                        .token(UUID.randomUUID().toString())
-                        .expiryDate(Instant.now().plusMillis(refreshDuration))
-                        .revoked(false)
-                        .user(user)
-                        .build()
-        );
+    private final String STATUS_ACTIVE = "ACTIVE";
+    private final String STATUS_REVOKED = "REVOKED";
+
+
+    private final RedisService redisService;
+
+    public String createRefreshToken(Long userId) {
+
+        String rawToken = UUID.randomUUID().toString();
+        String tokenHash = hashToken(rawToken);
+
+        String familyId = UUID.randomUUID().toString();
+
+        String tokenKey = buildTokenKey(tokenHash);
+        String familyKey = buildFamilyKey(familyId);
+
+
+        redisService.putHash(tokenKey, FIELD_USER_ID, userId.toString());
+        redisService.putHash(tokenKey, FIELD_FAMILY_ID, familyId);
+        redisService.putHash(tokenKey, FIELD_REVOKED, "false");
+        redisService.expire(tokenKey, refreshDuration, TimeUnit.MILLISECONDS);
+
+        redisService.putHash(familyKey, FIELD_STATUS, STATUS_ACTIVE);
+        redisService.expire(familyKey, refreshDuration, TimeUnit.MILLISECONDS);
+
+        return rawToken;
     }
 
-    public void verifyRefreshToken(RefreshToken refreshToken)
-    {
-        if(refreshToken.isRevoked())
+    public Long verifyAndGetUserId(String rawToken) {
+
+        String tokenHash = hashToken(rawToken);
+        String tokenKey = buildTokenKey(tokenHash);
+
+
+        if (Boolean.FALSE.equals(redisService.hasKey(tokenKey))) {
+            log.error("dong 1");
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        String revoked = redisService.getHash(tokenKey, FIELD_REVOKED);
+        String familyId = redisService.getHash(tokenKey, FIELD_FAMILY_ID);
+        String familyStatus = redisService.getHash(buildFamilyKey(familyId), FIELD_STATUS);
+        String userId = redisService.getHash(tokenKey, FIELD_USER_ID);
+
+
+
+        if ("true".equals(revoked)) {
+            log.error("dong 1");
+            revokeFamily(familyId);
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED);
+        }
+
+        if (STATUS_REVOKED.equals(familyStatus)) {
+            log.error("dong 1");
             throw new ApiException(ErrorCode.REFRESH_TOKEN_REVOKED);
-        if(refreshToken.getExpiryDate().isBefore(Instant.now()))
-        {
-            refreshToken.setRevoked(true);
-            refreshTokenRepository.save(refreshToken);
-            throw new ApiException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+
+        return Long.valueOf(userId);
+    }
+
+    public void revokeToken(String rawToken) {
+
+        String tokenHash = hashToken(rawToken);
+        String tokenKey = buildTokenKey(tokenHash);
+
+        if (Boolean.FALSE.equals(redisService.hasKey(tokenKey))) {
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        redisService.putHash(tokenKey, FIELD_REVOKED, "true");
+    }
+
+    public String rotateRefreshToken(String oldRawToken, Long userId) {
+
+        String oldTokenHash = hashToken(oldRawToken);
+        String oldTokenKey = buildTokenKey(oldTokenHash);
+
+        if (Boolean.FALSE.equals(redisService.hasKey(oldTokenKey))) {
+            log.error("dong 1");
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        String revoked = redisService.getHash(oldTokenKey, FIELD_REVOKED);
+        String familyId = redisService.getHash(oldTokenKey, FIELD_FAMILY_ID);
+        String familyStatus = redisService.getHash(buildFamilyKey(familyId), FIELD_STATUS);
+
+        if ("true".equals(revoked)) {
+            log.error("dong 1");
+            revokeFamily(familyId);
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED);
+        }
+
+        if (STATUS_REVOKED.equals(familyStatus)) {
+            log.error("dong 1");
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_REVOKED);
+        }
+
+        redisService.putHash(oldTokenKey, FIELD_REVOKED, "true");
+
+        String newRawToken = UUID.randomUUID().toString();
+        String newTokenHash = hashToken(newRawToken);
+        String newTokenKey = buildTokenKey(newTokenHash);
+
+        redisService.putHash(newTokenKey, FIELD_USER_ID, userId.toString());
+        redisService.putHash(newTokenKey, FIELD_FAMILY_ID, familyId);
+        redisService.putHash(newTokenKey, FIELD_REVOKED, "false");
+        redisService.expire(newTokenKey, refreshDuration, TimeUnit.MILLISECONDS);
+
+        redisService.expire(buildFamilyKey(familyId), refreshDuration, TimeUnit.MILLISECONDS);
+
+        return newRawToken;
+    }
+
+    public void revokeFamily(String familyId) {
+        if (familyId == null) {return;}
+
+        String familyKey = buildFamilyKey(familyId);
+
+        if (Boolean.FALSE.equals(redisService.hasKey(familyKey))) {return;}
+
+        redisService.putHash(familyKey, FIELD_STATUS, STATUS_REVOKED);
+    }
+
+
+    private String hashToken(String token) {
+
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
+
+        } catch (NoSuchAlgorithmException e) {
+            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public void revokeToken(String token)
-    {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
-        refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
+    private String buildTokenKey(String tokenHash) {
+        return TOKEN_KEY_PREFIX + tokenHash;
     }
 
-    public RefreshToken findRefreshToken(String token)
-    {
-        return refreshTokenRepository.findByToken(token).orElseThrow(
-                () -> new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+
+    private String buildFamilyKey(String familyId) {
+        return FAMILY_KEY_PREFIX + familyId;
     }
+
+
+
+
+//    public RefreshToken createRefreshToken(String identifier)
+//    {
+//        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+//                .orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
+//
+//        return refreshTokenRepository.save(
+//                RefreshToken.builder()
+//                        .token(UUID.randomUUID().toString())
+//                        .expiryDate(Instant.now().plusMillis(refreshDuration))
+//                        .revoked(false)
+//                        .user(user)
+//                        .build()
+//        );
+//    }
+//
+//    public void verifyRefreshToken(RefreshToken refreshToken)
+//    {
+//        if(refreshToken.isRevoked())
+//            throw new ApiException(ErrorCode.REFRESH_TOKEN_REVOKED);
+//        if(refreshToken.getExpiryDate().isBefore(Instant.now()))
+//        {
+//            refreshToken.setRevoked(true);
+//            refreshTokenRepository.save(refreshToken);
+//            throw new ApiException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+//        }
+//    }
+//
+//    public void revokeToken(String token)
+//    {
+//        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+//                .orElseThrow(() -> new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+//        refreshToken.setRevoked(true);
+//        refreshTokenRepository.save(refreshToken);
+//    }
+//
+//    public RefreshToken findRefreshToken(String token)
+//    {
+//        return refreshTokenRepository.findByToken(token).orElseThrow(
+//                () -> new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND));
+//    }
+
+
 
 
 
