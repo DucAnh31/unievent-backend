@@ -1,5 +1,10 @@
 package com.ducanh.unievent.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ducanh.unievent.dto.request.ChangePasswordRequest;
 import com.ducanh.unievent.dto.request.UpdateUserRequest;
 import com.ducanh.unievent.dto.response.UserResponse;
@@ -9,14 +14,9 @@ import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.UserMapper;
 import com.ducanh.unievent.repository.UserRepository;
 import com.ducanh.unievent.security.SecurityHelper;
-import com.ducanh.unievent.security.custom.CustomUserDetails;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,32 +27,19 @@ public class UserService {
     private final SecurityHelper securityHelper;
     private final PasswordEncoder encoder;
 
-//    private User getCurrentUser()
-//    {
-//        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//        User user = userRepository.findById(userDetails.getId()).orElseThrow(
-//                () -> new ApiException(ErrorCode.USER_NOT_FOUND));
-//        return user;
-//    }
-
-    public UserResponse getMyProfile()
-    {
+    public UserResponse getMyProfile() {
         User user = securityHelper.getCurrentUser();
         return userMapper.toUserResponse(user);
     }
 
-
     @Transactional
-    public UserResponse updateMyProfile(UpdateUserRequest request)
-    {
+    public UserResponse updateMyProfile(UpdateUserRequest request) {
         User user = securityHelper.getCurrentUser();
         userMapper.updateUser(user, request);
 
         try {
             user = userRepository.saveAndFlush(user);
-        }
-        catch (DataIntegrityViolationException e)
-        {
+        } catch (DataIntegrityViolationException e) {
             throw new ApiException(ErrorCode.EMAIL_EXISTED);
         }
 
@@ -60,10 +47,9 @@ public class UserService {
     }
 
     @Transactional
-    public void changePassword(ChangePasswordRequest request)
-    {
+    public void changePassword(ChangePasswordRequest request) {
         User user = securityHelper.getCurrentUser();
-        if(!encoder.matches(request.getCurrentPassword(), user.getPassword()))
+        if (!encoder.matches(request.getCurrentPassword(), user.getPassword()))
             throw new ApiException(ErrorCode.INVALID_CURRENT_PASSWORD);
         user.setPassword(encoder.encode(request.getNewPassword()));
         userRepository.save(user);

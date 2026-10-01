@@ -1,12 +1,12 @@
 package com.ducanh.unievent.common.util;
 
-import com.ducanh.unievent.exception.ApiException;
-import com.ducanh.unievent.exception.ErrorCode;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+
+import com.ducanh.unievent.exception.ApiException;
+import com.ducanh.unievent.exception.ErrorCode;
 
 public final class Sha256Util {
     public static String sha256(String rawToken) {
@@ -18,5 +18,4 @@ public final class Sha256Util {
             throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
-
 }

@@ -1,8 +1,9 @@
 package com.ducanh.unievent.exception;
 
+import org.springframework.http.HttpStatus;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
@@ -27,7 +28,6 @@ public enum ErrorCode {
     REFRESH_TOKEN_REUSE_DETECTED(HttpStatus.UNAUTHORIZED, "Refresh Token reuse detected"),
 
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Invalid data"),
-
 
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "Forbidden"),
@@ -66,6 +66,9 @@ public enum ErrorCode {
     TOO_MANY_VERIFICATION_EMAIL_REQUESTS(HttpStatus.BAD_REQUEST, "Too many verification email request"),
 
     INVALID_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "Current password invalid"),
+
+    CANNOT_MODIFY_YOURSELF(HttpStatus.BAD_REQUEST, "Cannot modify yourself"),
+    CANNOT_MODIFY_OTHER_ADMIN(HttpStatus.BAD_REQUEST, "Cannot mofify other admin"),
 
     INVALID_EMAIL_VERIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "Email verification token invalid");
 

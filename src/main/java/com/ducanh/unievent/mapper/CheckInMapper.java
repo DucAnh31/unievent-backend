@@ -1,17 +1,12 @@
 package com.ducanh.unievent.mapper;
 
-import com.ducanh.unievent.dto.request.CreateEventCategoryRequest;
-import com.ducanh.unievent.dto.request.UpdateEventCategoryRequest;
-import com.ducanh.unievent.dto.response.CheckInResponse;
-import com.ducanh.unievent.dto.response.EventCategoryResponse;
-import com.ducanh.unievent.entity.CheckIn;
-import com.ducanh.unievent.entity.EventCategory;
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
 
-import java.lang.annotation.Target;
-import java.util.List;
+import com.ducanh.unievent.dto.response.CheckInResponse;
+import com.ducanh.unievent.entity.CheckIn;
 
 @Mapper(componentModel = "spring")
 public interface CheckInMapper {
@@ -22,5 +17,4 @@ public interface CheckInMapper {
     public CheckInResponse toCheckInResponse(CheckIn checkIn);
 
     public List<CheckInResponse> toListCheckInResponse(List<CheckIn> checkIns);
-
 }

@@ -1,5 +1,15 @@
 package com.ducanh.unievent.service;
 
+import java.time.Instant;
+import java.util.Set;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.common.enums.RegistrationStatus;
 import com.ducanh.unievent.common.util.PageableFactoryUtil;
@@ -12,22 +22,12 @@ import com.ducanh.unievent.entity.User;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.EventRegistrationMapper;
-import com.ducanh.unievent.repository.EventRepository;
 import com.ducanh.unievent.repository.EventRegistrationRepository;
+import com.ducanh.unievent.repository.EventRepository;
 import com.ducanh.unievent.security.SecurityHelper;
 import com.ducanh.unievent.specification.RegistrationSpecification;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.HTMLDocument;
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -38,39 +38,35 @@ public class EventRegistrationService {
     private final EventRegistrationMapper eventRegistrationMapper;
     private static final Set<String> ALLOWED_REGISTRATION_SORT_FIELDS = Set.of("registeredAt");
 
-
     @Transactional
-    public EventRegistrationResponse registerEvent(Long eventId)
-    {
+    public EventRegistrationResponse registerEvent(Long eventId) {
         User user = securityHelper.getCurrentUser();
 
-        Event event = eventRepository.findForRegistrationById(eventId)
+        Event event = eventRepository
+                .findForRegistrationById(eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.PUBLISHED)
-            throw new ApiException(ErrorCode.REGISTRATION_NOT_OPEN);
+        if (event.getStatus() != EventStatus.PUBLISHED) throw new ApiException(ErrorCode.REGISTRATION_NOT_OPEN);
 
-        if(!Instant.now().isBefore(event.getRegistrationDeadline()))
+        if (!Instant.now().isBefore(event.getRegistrationDeadline()))
             throw new ApiException(ErrorCode.REGISTRATION_DEADLINE_PASSED);
 
-        Registration exist = eventRegistrationRepository.findByUser_IdAndEvent_Id(user.getId(), eventId)
+        Registration exist = eventRegistrationRepository
+                .findByUser_IdAndEvent_Id(user.getId(), eventId)
                 .orElse(null);
 
-        if(exist != null && exist.getStatus() == RegistrationStatus.REGISTERED)
+        if (exist != null && exist.getStatus() == RegistrationStatus.REGISTERED)
             throw new ApiException(ErrorCode.REGISTRATION_ALREADY_REGISTERED);
 
-        Long registeredCount = eventRegistrationRepository.countByEvent_idAndStatus(eventId, RegistrationStatus.REGISTERED);
+        Long registeredCount =
+                eventRegistrationRepository.countByEvent_idAndStatus(eventId, RegistrationStatus.REGISTERED);
 
-        if(registeredCount >= event.getMaxParticipants())
-            throw new ApiException(ErrorCode.EVENT_FULL);
+        if (registeredCount >= event.getMaxParticipants()) throw new ApiException(ErrorCode.EVENT_FULL);
 
         Registration registration = null;
-        if(exist != null)
-        {
+        if (exist != null) {
             registration = exist;
-        }
-        else
-        {
+        } else {
             registration = new Registration();
             registration.setEvent(event);
             registration.setUser(user);
@@ -86,23 +82,22 @@ public class EventRegistrationService {
     }
 
     @Transactional
-    public void cancelRegistration(Long eventId)
-    {
+    public void cancelRegistration(Long eventId) {
         User user = securityHelper.getCurrentUser();
 
-        Event event = eventRepository.findForRegistrationById(eventId)
+        Event event = eventRepository
+                .findForRegistrationById(eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        Registration registration = eventRegistrationRepository.findByUser_IdAndEvent_Id(user.getId(), eventId)
+        Registration registration = eventRegistrationRepository
+                .findByUser_IdAndEvent_Id(user.getId(), eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
-
-        if(registration.getStatus() == RegistrationStatus.CANCELLED)
+        if (registration.getStatus() == RegistrationStatus.CANCELLED)
             throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
 
-        if((event.getStatus() != EventStatus.PUBLISHED &&
-                event.getStatus() != EventStatus.REGISTRATION_CLOSED)
-            || (!Instant.now().isBefore(event.getStartTime())))
+        if ((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED)
+                || (!Instant.now().isBefore(event.getStartTime())))
             throw new ApiException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
 
         registration.setCancelledAt(Instant.now());
@@ -111,40 +106,34 @@ public class EventRegistrationService {
         eventRegistrationRepository.save(registration);
     }
 
-    public EventRegistrationResponse getMyRegistration(Long registrationId)
-    {
+    public EventRegistrationResponse getMyRegistration(Long registrationId) {
         User user = securityHelper.getCurrentUser();
 
-        Registration registration = eventRegistrationRepository.findByIdAndUser_Id(registrationId, user.getId())
+        Registration registration = eventRegistrationRepository
+                .findByIdAndUser_Id(registrationId, user.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
         return eventRegistrationMapper.toRegistrationEventResponse(registration);
     }
 
-    public Page<EventRegistrationResponse> getMyRegistrations(
-            int page,
-            int size,
-            String sort
-    )
-    {
+    public Page<EventRegistrationResponse> getMyRegistrations(int page, int size, String sort) {
         User user = securityHelper.getCurrentUser();
 
         Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_REGISTRATION_SORT_FIELDS);
 
-        return eventRegistrationRepository.findAllByUser_Id(user.getId(), pageable)
+        return eventRegistrationRepository
+                .findAllByUser_Id(user.getId(), pageable)
                 .map(registration -> eventRegistrationMapper.toRegistrationEventResponse(registration));
-
     }
 
-    public CheckInCodeResponse getMyCheckInCode(Long registrationId)
-    {
+    public CheckInCodeResponse getMyCheckInCode(Long registrationId) {
         User user = securityHelper.getCurrentUser();
 
-        Registration registration = eventRegistrationRepository.findById(registrationId)
+        Registration registration = eventRegistrationRepository
+                .findById(registrationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
-        if(registration.getStatus() == RegistrationStatus.CANCELLED)
-        {
+        if (registration.getStatus() == RegistrationStatus.CANCELLED) {
             throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
         }
 
@@ -154,44 +143,39 @@ public class EventRegistrationService {
     }
 
     public Page<EventRegistrationResponse> getEventRegistrations(
-            Long eventId,
-            RegistrationFilterRequest filter,
-            int page,
-            int size,
-            String sort
-            )
-    {
+            Long eventId, RegistrationFilterRequest filter, int page, int size, String sort) {
         User organizer = securityHelper.getCurrentUser();
 
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
         Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_REGISTRATION_SORT_FIELDS);
 
-        Specification<Registration> specification = RegistrationSpecification.buildRegistrationSpecification(eventId, filter);
+        Specification<Registration> specification =
+                RegistrationSpecification.buildRegistrationSpecification(eventId, filter);
 
-        return eventRegistrationRepository.findAll(specification, pageable)
+        return eventRegistrationRepository
+                .findAll(specification, pageable)
                 .map(registration -> eventRegistrationMapper.toRegistrationEventResponse(registration));
-
     }
 
     @Transactional
-    public void cancelRegistrationByOrganizer(Long eventId, Long registrationId)
-    {
+    public void cancelRegistrationByOrganizer(Long eventId, Long registrationId) {
         User organizer = securityHelper.getCurrentUser();
 
-        Event event = eventRepository.findForRegistrationByIdAndOrganizer_Id(eventId, organizer.getId())
+        Event event = eventRepository
+                .findForRegistrationByIdAndOrganizer_Id(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        Registration registration = eventRegistrationRepository.findByIdAndEvent_Id(registrationId, eventId)
+        Registration registration = eventRegistrationRepository
+                .findByIdAndEvent_Id(registrationId, eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
         if (registration.getStatus() == RegistrationStatus.CANCELLED)
             throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
 
-
-        if ((event.getStatus() != EventStatus.PUBLISHED
-                && event.getStatus() != EventStatus.REGISTRATION_CLOSED)
+        if ((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED)
                 || !Instant.now().isBefore(event.getStartTime())) {
             throw new ApiException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
@@ -199,6 +183,4 @@ public class EventRegistrationService {
         registration.setStatus(RegistrationStatus.CANCELLED);
         registration.setCancelledAt(Instant.now());
     }
-
-
 }

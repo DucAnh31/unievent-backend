@@ -1,11 +1,12 @@
 package com.ducanh.unievent.common;
 
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.springframework.data.domain.Page;
-
-import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -18,8 +19,7 @@ public class PageResponse<T> {
     private Integer totalPage;
     private Boolean hasNext;
 
-    public static <T> PageResponse<T> from(Page<T> result)
-    {
+    public static <T> PageResponse<T> from(Page<T> result) {
         return PageResponse.<T>builder()
                 .content(result.getContent())
                 .page(result.getNumber())

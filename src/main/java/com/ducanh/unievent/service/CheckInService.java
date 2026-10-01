@@ -1,10 +1,19 @@
 package com.ducanh.unievent.service;
 
+import java.time.Instant;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.common.enums.RegistrationStatus;
 import com.ducanh.unievent.common.util.PageableFactoryUtil;
 import com.ducanh.unievent.dto.request.CheckInRequest;
-import com.ducanh.unievent.dto.response.CheckInCodeResponse;
 import com.ducanh.unievent.dto.response.CheckInResponse;
 import com.ducanh.unievent.dto.response.StudentCheckInStatusResponse;
 import com.ducanh.unievent.entity.CheckIn;
@@ -18,19 +27,8 @@ import com.ducanh.unievent.repository.CheckInRepository;
 import com.ducanh.unievent.repository.EventRegistrationRepository;
 import com.ducanh.unievent.repository.EventRepository;
 import com.ducanh.unievent.security.SecurityHelper;
-import lombok.RequiredArgsConstructor;
-import org.hibernate.annotations.DialectOverride;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.support.PageableUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -43,8 +41,7 @@ public class CheckInService {
     private static final Set<String> ALLOWED_CHECK_IN_SORT_FIELDS = Set.of("checkInTime");
 
     @Transactional
-    public CheckInResponse checkIn(Long eventId, CheckInRequest request)
-    {
+    public CheckInResponse checkIn(Long eventId, CheckInRequest request) {
         User organizer = securityHelper.getCurrentUser();
 
         Event event = eventRepository
@@ -54,17 +51,11 @@ public class CheckInService {
         Instant now = Instant.now();
         EventStatus status = event.getStatus();
 
-        boolean validStatus = status == EventStatus.PUBLISHED
-                || status == EventStatus.REGISTRATION_CLOSED
-                || status == EventStatus.ONGOING;
+        boolean validStatus = status == EventStatus.PUBLISHED || status == EventStatus.REGISTRATION_CLOSED;
 
-//        chay test phai cmt nay lai....
-//        if (!validStatus
-//                || now.isBefore(event.getStartTime())
-//                || !now.isBefore(event.getEndTime())) {
-//            throw new ApiException(ErrorCode.CHECK_IN_NOT_ALLOWED);
-//        }
-
+        if (!validStatus || !now.isBefore(event.getEndTime())) {
+            throw new ApiException(ErrorCode.CHECK_IN_NOT_ALLOWED);
+        }
 
         Registration registration = eventRegistrationRepository
                 .findByEvent_IdAndCheckInCode(eventId, request.getCheckInCode())
@@ -74,25 +65,17 @@ public class CheckInService {
             throw new ApiException(ErrorCode.CHECK_IN_NOT_ALLOWED);
         }
 
-        CheckIn checkIn = CheckIn.builder()
-                .checkInTime(now)
-                .registration(registration)
-                .build();
+        CheckIn checkIn =
+                CheckIn.builder().checkInTime(now).registration(registration).build();
 
         try {
             return checkInMapper.toCheckInResponse(checkInRepository.saveAndFlush(checkIn));
-        }
-        catch (DataIntegrityViolationException e)
-        {
+        } catch (DataIntegrityViolationException e) {
             throw new ApiException(ErrorCode.ALREADY_CHECKED_IN);
         }
-
     }
 
-
-
-    public StudentCheckInStatusResponse getMyCheckInStatus(Long registrationId)
-    {
+    public StudentCheckInStatusResponse getMyCheckInStatus(Long registrationId) {
         User user = securityHelper.getCurrentUser();
 
         Registration registration = eventRegistrationRepository
@@ -100,14 +83,9 @@ public class CheckInService {
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
         Optional<CheckIn> checkIn = checkInRepository.findByRegistration_Id(registrationId);
-        if(checkIn.isEmpty())
-        {
-            return StudentCheckInStatusResponse.builder()
-                    .checkedIn(false)
-                    .build();
-        }
-        else
-        {
+        if (checkIn.isEmpty()) {
+            return StudentCheckInStatusResponse.builder().checkedIn(false).build();
+        } else {
             return StudentCheckInStatusResponse.builder()
                     .checkedIn(true)
                     .checkInTime(checkIn.get().getCheckInTime())
@@ -115,18 +93,16 @@ public class CheckInService {
         }
     }
 
-    public Page<CheckInResponse> getEventCheckIns(Long eventId, int page, int size, String sort)
-    {
+    public Page<CheckInResponse> getEventCheckIns(Long eventId, int page, int size, String sort) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
         Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_CHECK_IN_SORT_FIELDS);
 
-        return checkInRepository.findByRegistration_Event_Id(eventId, pageable)
+        return checkInRepository
+                .findByRegistration_Event_Id(eventId, pageable)
                 .map(checkIn -> checkInMapper.toCheckInResponse(checkIn));
-
-
-
     }
 }

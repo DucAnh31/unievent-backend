@@ -1,13 +1,15 @@
 package com.ducanh.unievent.dto.request;
 
-import com.ducanh.unievent.common.enums.RegistrationStatus;
+import java.util.List;
+
 import jakarta.validation.constraints.Size;
+
+import com.ducanh.unievent.common.enums.RegistrationStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

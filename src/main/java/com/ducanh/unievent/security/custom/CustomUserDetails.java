@@ -1,13 +1,14 @@
 package com.ducanh.unievent.security.custom;
 
-import com.ducanh.unievent.common.enums.UserStatus;
-import com.ducanh.unievent.entity.User;
+import java.util.Collection;
+import java.util.List;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.List;
+import com.ducanh.unievent.common.enums.UserStatus;
+import com.ducanh.unievent.entity.User;
 
 public class CustomUserDetails implements UserDetails {
     private Long id;
@@ -36,7 +37,8 @@ public class CustomUserDetails implements UserDetails {
     }
 
     public static CustomUserDetails build(User user) {
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        List<GrantedAuthority> authorities =
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
 
         return new CustomUserDetails(
                 user.getId(),
@@ -45,8 +47,7 @@ public class CustomUserDetails implements UserDetails {
                 user.getEmail(),
                 authorities,
                 user.getStatus(),
-                user.getEmailVerifiedAt() != null
-        );
+                user.getEmailVerifiedAt() != null);
     }
 
     @Override
@@ -64,7 +65,6 @@ public class CustomUserDetails implements UserDetails {
         return username;
     }
 
-
     public String getEmail() {
         return email;
     }
@@ -78,14 +78,22 @@ public class CustomUserDetails implements UserDetails {
     }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return status == UserStatus.ACTIVE; }
+    public boolean isEnabled() {
+        return status == UserStatus.ACTIVE;
+    }
 }

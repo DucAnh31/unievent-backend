@@ -1,11 +1,11 @@
 package com.ducanh.unievent.service;
 
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +18,7 @@ public class EmailService {
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
 
-    public void sendOtp(String to, String otp)
-    {
+    public void sendOtp(String to, String otp) {
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(sender);
@@ -36,18 +35,19 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("UniEvent - Xác minh địa chỉ email");
-        message.setText("""
-            Chào bạn,
+        message.setText(
+                """
+			Chào bạn,
 
-            Link kich hoat tai khoan UniEvent:
+			Link kich hoat tai khoan UniEvent:
 
-            %s
+			%s
 
-            Link có hiệu lực trong 24 giờ. Nếu bạn không đăng ký tài khoản,
-            hãy bỏ qua email này.
-            """.formatted(verificationLink));
+			Link có hiệu lực trong 24 giờ. Nếu bạn không đăng ký tài khoản,
+			hãy bỏ qua email này.
+			"""
+                        .formatted(verificationLink));
 
         javaMailSender.send(message);
     }
-
 }

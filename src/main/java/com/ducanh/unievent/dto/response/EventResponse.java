@@ -1,12 +1,13 @@
 package com.ducanh.unievent.dto.response;
 
+import java.time.Instant;
+
 import com.ducanh.unievent.common.enums.EventStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
 
 @Data
 @AllArgsConstructor

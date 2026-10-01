@@ -1,14 +1,16 @@
 package com.ducanh.unievent.entity;
 
-import com.ducanh.unievent.common.enums.EventStatus;
-import com.ducanh.unievent.common.enums.UserStatus;
+import java.time.Instant;
+
 import jakarta.persistence.*;
-import lombok.*;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
+import com.ducanh.unievent.common.enums.EventStatus;
+
+import lombok.*;
 
 @Entity
 @Table(name = "events")
@@ -49,10 +51,6 @@ public class Event {
     @Column(name = "status", nullable = false)
     private EventStatus status;
 
-
-
-
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -61,7 +59,6 @@ public class Event {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_category_id", nullable = false)
     private EventCategory category;
@@ -69,6 +66,4 @@ public class Event {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
-
-
 }

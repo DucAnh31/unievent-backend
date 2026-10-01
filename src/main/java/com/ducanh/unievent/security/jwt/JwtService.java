@@ -1,16 +1,17 @@
 package com.ducanh.unievent.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import java.util.*;
+import java.util.function.Function;
+import javax.crypto.SecretKey;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.util.*;
-import java.util.function.Function;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 @Service
 public class JwtService {
@@ -20,11 +21,10 @@ public class JwtService {
     @Value("${jwt.valid-duration}")
     private Long validDuration;
 
-
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         List<String> roles = new ArrayList<>();
-        for(GrantedAuthority grantedAuthority : userDetails.getAuthorities())
+        for (GrantedAuthority grantedAuthority : userDetails.getAuthorities())
             roles.add(grantedAuthority.getAuthority());
         claims.put("role", roles);
         return createToken(claims, userDetails.getUsername());

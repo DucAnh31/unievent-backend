@@ -1,13 +1,12 @@
 package com.ducanh.unievent.common.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -47,11 +46,9 @@ public class RedisService {
     }
 
     public boolean setIfAbsentWithTTL(String key, String value, Duration ttl) {
-        return Boolean.TRUE.equals(
-                stringRedisTemplate.opsForValue()
-                        .setIfAbsent(key, value, ttl)
-        );
+        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(key, value, ttl));
     }
+
     public long increment(String key) {
         Long result = stringRedisTemplate.opsForValue().increment(key);
         return result;
@@ -60,5 +57,4 @@ public class RedisService {
     public String getAndDelete(String key) {
         return stringRedisTemplate.opsForValue().getAndDelete(key);
     }
-
 }

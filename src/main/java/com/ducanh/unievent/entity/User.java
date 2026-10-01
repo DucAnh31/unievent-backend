@@ -1,14 +1,17 @@
 package com.ducanh.unievent.entity;
 
-import com.ducanh.unievent.common.enums.UserRole;
-import com.ducanh.unievent.common.enums.UserStatus;
+import java.time.Instant;
+
 import jakarta.persistence.*;
-import lombok.*;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
+import com.ducanh.unievent.common.enums.UserRole;
+import com.ducanh.unievent.common.enums.UserStatus;
+
+import lombok.*;
 
 @Entity
 @Table(name = "users")
@@ -36,7 +39,6 @@ public class User {
     @Column(name = "password", nullable = false)
     private String password;
 
-
     @Column(name = "student_code", unique = true)
     private String studentCode;
 
@@ -51,8 +53,6 @@ public class User {
     @Column(name = "email_verified_at")
     private Instant emailVerifiedAt;
 
-
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -60,6 +60,4 @@ public class User {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-
 }

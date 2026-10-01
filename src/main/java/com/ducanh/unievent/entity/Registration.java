@@ -1,23 +1,21 @@
 package com.ducanh.unievent.entity;
 
-import com.ducanh.unievent.common.enums.EventStatus;
-import com.ducanh.unievent.common.enums.RegistrationStatus;
-import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.Instant;
 
+import jakarta.persistence.*;
+
+import com.ducanh.unievent.common.enums.RegistrationStatus;
+
+import lombok.*;
+
 @Entity
-@Table(name = "registrations",
-       uniqueConstraints = {
+@Table(
+        name = "registrations",
+        uniqueConstraints = {
             @UniqueConstraint(
                     name = "uk_registration_user_id_event_id",
-                    columnNames = {"user_id", "event_id"}
-            )
-       })
+                    columnNames = {"user_id", "event_id"})
+        })
 @Setter
 @Getter
 @AllArgsConstructor
@@ -39,10 +37,8 @@ public class Registration {
     @Column(name = "registered_at", nullable = false)
     private Instant registeredAt;
 
-
     @Column(name = "cancelled_at")
     private Instant cancelledAt;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", nullable = false)
@@ -51,6 +47,4 @@ public class Registration {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
-
 }

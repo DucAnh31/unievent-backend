@@ -1,14 +1,12 @@
 package com.ducanh.unievent.security.custom;
 
-import com.ducanh.unievent.entity.User;
-import com.ducanh.unievent.exception.ApiException;
-import com.ducanh.unievent.exception.ErrorCode;
-import com.ducanh.unievent.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.ducanh.unievent.entity.User;
+import com.ducanh.unievent.repository.UserRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -17,7 +15,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public CustomUserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
-        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+        User user = userRepository
+                .findByUsernameOrEmail(identifier, identifier)
                 .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
 
         return CustomUserDetails.build(user);

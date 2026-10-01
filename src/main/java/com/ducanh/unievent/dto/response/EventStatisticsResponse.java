@@ -1,6 +1,5 @@
 package com.ducanh.unievent.dto.response;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

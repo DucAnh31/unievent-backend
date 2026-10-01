@@ -1,18 +1,19 @@
 package com.ducanh.unievent.dto.request;
 
-import com.ducanh.unievent.common.enums.EventStatus;
+import java.time.Instant;
+import java.util.List;
+
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.ducanh.unievent.common.enums.EventStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.web.bind.annotation.PostMapping;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -27,7 +28,11 @@ public class EventFilterRequest {
 
     private List<EventStatus> statuses;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // cho viec chuyen doi tu url(hoac form data) vao object, createEventReq khong can vi co json roi
+    @DateTimeFormat(
+            iso =
+                    DateTimeFormat.ISO
+                            .DATE_TIME) // cho viec chuyen doi tu url(hoac form data) vao object, createEventReq khong
+    // can vi co json roi
     private Instant from;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

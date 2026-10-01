@@ -1,10 +1,10 @@
 package com.ducanh.unievent.entity;
 
-import com.ducanh.unievent.common.enums.RegistrationStatus;
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.Instant;
+
+import jakarta.persistence.*;
+
+import lombok.*;
 
 @Entity
 @Table(name = "check_ins")

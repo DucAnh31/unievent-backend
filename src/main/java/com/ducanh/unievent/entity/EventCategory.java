@@ -1,14 +1,14 @@
 package com.ducanh.unievent.entity;
 
-import com.ducanh.unievent.common.enums.UserRole;
-import com.ducanh.unievent.common.enums.UserStatus;
+import java.time.Instant;
+
 import jakarta.persistence.*;
-import lombok.*;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
+import lombok.*;
 
 @Entity
 @Table(name = "event_categories")
@@ -30,8 +30,6 @@ public class EventCategory {
     @Column(name = "description", length = 500)
     private String description;
 
-
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -39,6 +37,4 @@ public class EventCategory {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
-
-
 }

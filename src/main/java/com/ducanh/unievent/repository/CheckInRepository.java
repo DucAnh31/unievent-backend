@@ -1,13 +1,13 @@
 package com.ducanh.unievent.repository;
 
-import com.ducanh.unievent.entity.CheckIn;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
-import java.util.Optional;
+import com.ducanh.unievent.entity.CheckIn;
 
 public interface CheckInRepository extends JpaRepository<CheckIn, Long> {
     public Optional<CheckIn> findByRegistration_Id(Long registrationId);

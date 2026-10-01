@@ -1,5 +1,14 @@
 package com.ducanh.unievent.service;
 
+import java.time.Instant;
+import java.util.*;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.common.enums.RegistrationStatus;
 import com.ducanh.unievent.common.util.PageableFactoryUtil;
@@ -16,21 +25,10 @@ import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.EventMapper;
 import com.ducanh.unievent.repository.*;
 import com.ducanh.unievent.security.SecurityHelper;
-import com.ducanh.unievent.security.custom.CustomUserDetails;
 import com.ducanh.unievent.specification.EventSpecification;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -38,32 +36,16 @@ import java.util.*;
 public class EventService {
     private final EventMapper eventMapper;
     private final EventRepository eventRepository;
-    private final UserRepository userRepository;
     private final EventCategoryRepository eventCategoryRepository;
     private final SecurityHelper securityHelper;
     private final CheckInRepository checkInRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
 
-    private final Set<String> ALLOWED_EVENTS_SORT_FIELDS = Set.of(
-            "title",
-            "startTime",
-            "registrationDeadline",
-            "createdAt"
-    );
-
-//    private User getCurrentUser()
-//    {
-//        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//        User user = userRepository.findById(userDetails.getId()).orElseThrow(
-//                () -> new ApiException(ErrorCode.USER_NOT_FOUND));
-//        return user;
-//    }
-
-
+    private final Set<String> ALLOWED_EVENTS_SORT_FIELDS =
+            Set.of("title", "startTime", "registrationDeadline", "createdAt");
 
     @Transactional
-    public EventResponse createEvent(CreateEventRequest request)
-    {
+    public EventResponse createEvent(CreateEventRequest request) {
         validateEventTime(request.getStartTime(), request.getEndTime(), request.getRegistrationDeadline());
 
         User user = securityHelper.getCurrentUser();
@@ -79,13 +61,7 @@ public class EventService {
         return eventMapper.toEventResponse(eventRepository.save(event));
     }
 
-    public Page<EventResponse> getMyEvents(
-            EventFilterRequest filter,
-            int page,
-            int size,
-            String sort
-    )
-    {
+    public Page<EventResponse> getMyEvents(EventFilterRequest filter, int page, int size, String sort) {
         if (page < 0 || size < 1 || size > 50) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
@@ -98,32 +74,28 @@ public class EventService {
         User organizer = securityHelper.getCurrentUser();
         Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_EVENTS_SORT_FIELDS);
 
-        Specification<Event> specification = EventSpecification.buildOrganizerEventSpecification(filter, organizer.getId());
+        Specification<Event> specification =
+                EventSpecification.buildOrganizerEventSpecification(filter, organizer.getId());
 
-        return eventRepository.findAll(specification, pageable)
-                .map(event -> eventMapper.toEventResponse(event));
-
-
-//        List<Event> events = eventRepository.findAllByOrganizerId(organizer.getId());
-//        return  eventMapper.toListEventResponse(events);
+        return eventRepository.findAll(specification, pageable).map(event -> eventMapper.toEventResponse(event));
     }
 
-    public EventResponse getMyEvent(Long eventId)
-    {
+    public EventResponse getMyEvent(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
         return eventMapper.toEventResponse(event);
     }
 
     @Transactional
-    public EventResponse updateMyEvent(Long eventId, UpdateEventRequest request)
-    {
+    public EventResponse updateMyEvent(Long eventId, UpdateEventRequest request) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.DRAFT && event.getStatus() != EventStatus.PUBLISHED)
+        if (event.getStatus() != EventStatus.DRAFT && event.getStatus() != EventStatus.PUBLISHED)
             throw new ApiException(ErrorCode.EVENT_CANNOT_BE_UPDATED);
 
         validateEventTime(request.getStartTime(), request.getEndTime(), request.getRegistrationDeadline());
@@ -136,47 +108,29 @@ public class EventService {
         event.setCategory(category);
 
         return eventMapper.toEventResponse(eventRepository.save(event));
-
-
     }
 
     @Transactional
-    public void deleteMyEvent(Long eventId)
-    {
+    public void deleteMyEvent(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.DRAFT)
-            throw new ApiException(ErrorCode.EVENT_CANNOT_BE_DELETED);
+        if (event.getStatus() != EventStatus.DRAFT) throw new ApiException(ErrorCode.EVENT_CANNOT_BE_DELETED);
 
         eventRepository.delete(event);
-
     }
 
-//    @Transactional
-//    public EventResponse publishEvent(Long eventId)
-//    {
-//        User organizer = securityHelper.getCurrentUser();
-//        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
-//                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
-//
-//        if(event.getStatus() != EventStatus.DRAFT ||
-//                !event.getRegistrationDeadline().isAfter(Instant.now()))
-//            throw new ApiException(ErrorCode.EVENT_CANNOT_BE_PUBLISH);
-//
-//        event.setStatus(EventStatus.PUBLISHED);
-//        return eventMapper.toEventResponse(eventRepository.save(event));
-//    }
     @Transactional
-    public EventResponse submitEventForApproval(Long eventId)
-    {
+    public EventResponse submitEventForApproval(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.DRAFT ||
-                !event.getRegistrationDeadline().isAfter(Instant.now()))
+        if (event.getStatus() != EventStatus.DRAFT
+                || !event.getRegistrationDeadline().isAfter(Instant.now()))
             throw new ApiException(ErrorCode.EVENT_CANNOT_BE_PUBLISH);
 
         event.setStatus(EventStatus.PENDING_APPROVAL);
@@ -184,13 +138,13 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse closeRegistration(Long eventId)
-    {
+    public EventResponse closeRegistration(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.PUBLISHED)
+        if (event.getStatus() != EventStatus.PUBLISHED)
             throw new ApiException(ErrorCode.EVENT_CANNOT_CLOSE_REGISTRATION);
 
         event.setStatus(EventStatus.REGISTRATION_CLOSED);
@@ -198,129 +152,52 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse cancelEvent(Long eventId)
-    {
+    public EventResponse cancelEvent(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED) ||
-            !event.getStartTime().isAfter(Instant.now()))
-            throw new ApiException(ErrorCode.EVENT_CANNOT_CANCEL);
+        if ((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED)
+                || !event.getStartTime().isAfter(Instant.now())) throw new ApiException(ErrorCode.EVENT_CANNOT_CANCEL);
 
         event.setStatus(EventStatus.CANCELLED);
         return eventMapper.toEventResponse(eventRepository.save(event));
-
     }
 
     @Transactional
-    public EventResponse cancelAdminEvent(Long eventId)
-    {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+    public EventResponse cancelAdminEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED) ||
-                !event.getStartTime().isAfter(Instant.now()))
-            throw new ApiException(ErrorCode.EVENT_CANNOT_CANCEL);
+        if ((event.getStatus() != EventStatus.PUBLISHED && event.getStatus() != EventStatus.REGISTRATION_CLOSED)
+                || !event.getStartTime().isAfter(Instant.now())) throw new ApiException(ErrorCode.EVENT_CANNOT_CANCEL);
 
         event.setStatus(EventStatus.CANCELLED);
         return eventMapper.toEventResponse(eventRepository.save(event));
-
     }
 
-    public EventResponse getPublicEvent(Long eventId)
-    {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(()-> new ApiException(ErrorCode.EVENT_NOT_FOUND));
-        if(event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.PENDING_APPROVAL)
+    public EventResponse getPublicEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+        if (event.getStatus() == EventStatus.DRAFT || event.getStatus() == EventStatus.PENDING_APPROVAL)
             throw new ApiException(ErrorCode.EVENT_NOT_FOUND);
         return eventMapper.toEventResponse(event);
     }
 
-    public EventResponse getAdminEvent(Long eventId)
-    {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(()-> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+    public EventResponse getAdminEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
         return eventMapper.toEventResponse(event);
     }
 
-//    public PageResponse<EventResponse> getPublicEvents(
-//            String keyword,
-//            Long categoryId,
-//            EventStatus status,
-//            Instant from,
-//            Instant to,
-//            int page,
-//            int size,
-//            String sort
-//    )
-//    {
-//        if (page < 0
-//                || size < 1 || size > 50
-//                || (categoryId != null && categoryId <= 0)
-//                || status == EventStatus.DRAFT
-//                || (from != null && to != null && !from.isBefore(to))) {
-//            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-//        }
-//
-//        StringTokenizer stringTokenizer = new StringTokenizer(sort, ",");
-//        ArrayList<String> part = new ArrayList<>();
-//        while (stringTokenizer.hasMoreTokens())
-//            part.add(stringTokenizer.nextToken());
-//
-//        if(part.size() != 2)
-//            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-//
-//        String field = part.get(0).trim();
-//        if(!ALLOWED_SORT_FIELDS.contains(field))
-//            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-//
-//        Sort.Direction direction = Sort.Direction.fromOptionalString(part.get(1).trim())
-//                .orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_ERROR));
-//
-//        Sort order = Sort.by(new Sort.Order(direction, field), new Sort.Order(direction, "id"));
-//
-//
-//        String titlePattern = null;
-//        if (keyword != null && !keyword.isBlank()) {
-//            if (keyword.length() > 100) {
-//                throw new ApiException(ErrorCode.VALIDATION_ERROR);
-//            }
-//
-//            String escapedKeyword = keyword.trim()
-//                    .toLowerCase()
-//                    .replace("!", "!!")
-//                    .replace("%", "!%")
-//                    .replace("_", "!_");
-//
-//            titlePattern = "%" + escapedKeyword + "%";
-//        }
-//
-//        Pageable pageable = PageRequest.of(page, size, order);
-//
-//        return PageResponse.from(
-//                eventMapper.toPageEventResponse(eventRepository.findPublicEvents(
-//                        EventStatus.DRAFT,
-//                        status,
-//                        categoryId,
-//                        titlePattern,
-//                        from,
-//                        to,
-//                        pageable
-//                )));
-//    }
-
-    public Page<EventResponse> getPublicEvents(EventFilterRequest filter, int page, int size, String sort)
-    {
+    public Page<EventResponse> getPublicEvents(EventFilterRequest filter, int page, int size, String sort) {
         if (page < 0 || size < 1 || size > 50) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
 
-        if(filter.getStatuses() != null &&
-                filter.getStatuses().contains(EventStatus.DRAFT) &&
-                filter.getStatuses().contains(EventStatus.PENDING_APPROVAL))
-                    throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        if (filter.getStatuses() != null
+                && filter.getStatuses().contains(EventStatus.DRAFT)
+                && filter.getStatuses().contains(EventStatus.PENDING_APPROVAL))
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
 
         if (filter.getFrom() != null
                 && filter.getTo() != null
@@ -332,16 +209,10 @@ public class EventService {
 
         Specification<Event> specification = EventSpecification.buildEventSpecification(filter);
 
-
-        return eventRepository.findAll(specification, pageable)
-                .map(event -> eventMapper.toEventResponse(event));
-
+        return eventRepository.findAll(specification, pageable).map(event -> eventMapper.toEventResponse(event));
     }
 
-
-
-    public Page<EventResponse> getAdminEvents(EventFilterRequest filter, int page, int size, String sort)
-    {
+    public Page<EventResponse> getAdminEvents(EventFilterRequest filter, int page, int size, String sort) {
         if (page < 0 || size < 1 || size > 50) {
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
         }
@@ -356,40 +227,35 @@ public class EventService {
 
         Specification<Event> specification = EventSpecification.buildAdminEventSpecification(filter);
 
-
-        return eventRepository.findAll(specification, pageable)
-                .map(event -> eventMapper.toEventResponse(event));
-
+        return eventRepository.findAll(specification, pageable).map(event -> eventMapper.toEventResponse(event));
     }
 
-    private void validateEventTime(Instant start, Instant end, Instant registrationDeadline)
-    {
-        if(!start.isBefore(end) || !start.isAfter(registrationDeadline))
+    private void validateEventTime(Instant start, Instant end, Instant registrationDeadline) {
+        if (!start.isBefore(end) || !start.isAfter(registrationDeadline))
             throw new ApiException(ErrorCode.INVALID_EVENT_TIME);
     }
 
-    public EventStatisticsResponse getMyEventStatistics(Long eventId)
-    {
+    public EventStatisticsResponse getMyEventStatistics(Long eventId) {
         User organizer = securityHelper.getCurrentUser();
 
-        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+        Event event = eventRepository
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
         return EventStatisticsResponse.builder()
                 .eventId(eventId)
                 .checkedInCount(checkInRepository.countByRegistration_Event_Id(eventId))
                 .maxParticipants(event.getMaxParticipants())
-                .registeredCount(eventRegistrationRepository.countByEvent_IdAndStatus(eventId, RegistrationStatus.REGISTERED))
+                .registeredCount(
+                        eventRegistrationRepository.countByEvent_IdAndStatus(eventId, RegistrationStatus.REGISTERED))
                 .build();
     }
 
     @Transactional
-    public EventResponse approveEvent(Long eventId)
-    {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+    public EventResponse approveEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.PENDING_APPROVAL ||
-            !Instant.now().isBefore(event.getRegistrationDeadline()))
+        if (event.getStatus() != EventStatus.PENDING_APPROVAL
+                || !Instant.now().isBefore(event.getRegistrationDeadline()))
             throw new ApiException(ErrorCode.EVENT_CANNOT_BE_APPROVED);
 
         event.setStatus(EventStatus.PUBLISHED);
@@ -397,18 +263,14 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse rejectEvent(Long eventId)
-    {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+    public EventResponse rejectEvent(Long eventId) {
+        Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if(event.getStatus() != EventStatus.PENDING_APPROVAL ||
-                !Instant.now().isBefore(event.getRegistrationDeadline()))
+        if (event.getStatus() != EventStatus.PENDING_APPROVAL
+                || !Instant.now().isBefore(event.getRegistrationDeadline()))
             throw new ApiException(ErrorCode.EVENT_CANNOT_BE_REJECTED);
 
         event.setStatus(EventStatus.DRAFT);
         return eventMapper.toEventResponse(eventRepository.save(event));
     }
-
-
 }

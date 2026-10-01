@@ -1,7 +1,9 @@
 package com.ducanh.unievent.dto.request;
 
-import com.ducanh.unievent.common.enums.UserStatus;
 import jakarta.validation.constraints.NotNull;
+
+import com.ducanh.unievent.common.enums.UserStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
