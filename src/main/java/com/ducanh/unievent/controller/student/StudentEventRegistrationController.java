@@ -1,12 +1,14 @@
 package com.ducanh.unievent.controller.student;
 
 import com.ducanh.unievent.common.ApiResponse;
+import com.ducanh.unievent.common.PageResponse;
 import com.ducanh.unievent.dto.response.CheckInCodeResponse;
 import com.ducanh.unievent.dto.response.EventRegistrationResponse;
 import com.ducanh.unievent.dto.response.StudentCheckInStatusResponse;
 import com.ducanh.unievent.service.CheckInService;
 import com.ducanh.unievent.service.EventRegistrationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,10 +47,13 @@ public class StudentEventRegistrationController {
     }
 
     @GetMapping("registrations")
-    public ResponseEntity<ApiResponse<List<EventRegistrationResponse>>> getMyRegistrations()
+    public ResponseEntity<ApiResponse<PageResponse<EventRegistrationResponse>>> getMyRegistrations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "registeredAt,desc") String sort)
     {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(ApiResponse.success(registrationEventService.getMyRegistrations()));
+                .body(ApiResponse.success(PageResponse.from(registrationEventService.getMyRegistrations(page, size, sort))));
     }
 
     @GetMapping("registrations/{registrationId}/check-in-code")

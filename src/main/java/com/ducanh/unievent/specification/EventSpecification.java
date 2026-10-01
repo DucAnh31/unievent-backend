@@ -11,7 +11,32 @@ import java.util.List;
 public class EventSpecification {
 
     public static Specification<Event> buildEventSpecification(EventFilterRequest filter) {
-        return EventSpecification.isPublic()
+        return isPublic()
+                .and(hasStatus(filter.getStatuses()))
+                .and(hasCategoryId(filter.getCategoryIds()))
+                .and(hasKeyword(filter.getKeyword()))
+                .and(startFrom(filter.getFrom()))
+                .and(startBefore(filter.getTo()));
+    }
+
+    public static Specification<Event> buildAdminEventSpecification(EventFilterRequest filter) {
+        return  hasStatus(filter.getStatuses())
+                .and(hasCategoryId(filter.getCategoryIds()))
+                .and(hasKeyword(filter.getKeyword()))
+                .and(startFrom(filter.getFrom()))
+                .and(startBefore(filter.getTo()));
+    }
+
+    public static Specification<Event> belongsToOrganizer(Long organizerId) {
+        return (root, query, criteriaBuilder) ->
+                criteriaBuilder.equal(root.get("organizer").get("id"), organizerId);
+    }
+
+    public static Specification<Event> buildOrganizerEventSpecification(
+            EventFilterRequest filter,
+            Long organizerId
+    ) {
+        return belongsToOrganizer(organizerId)
                 .and(hasStatus(filter.getStatuses()))
                 .and(hasCategoryId(filter.getCategoryIds()))
                 .and(hasKeyword(filter.getKeyword()))
@@ -22,7 +47,9 @@ public class EventSpecification {
     public static Specification<Event> isPublic()
     {
         return (root, query, criteriaBuilder)
-                -> criteriaBuilder.notEqual(root.get("status"), EventStatus.DRAFT);
+                -> criteriaBuilder.and(criteriaBuilder.notEqual(root.get("status"), EventStatus.DRAFT),
+                                       criteriaBuilder.notEqual(root.get("status"), EventStatus.PENDING_APPROVAL));
+               // -> criteriaBuilder.notEqual(root.get("status"), EventStatus.DRAFT);
     }
 
     public static Specification<Event> hasStatus(List<EventStatus> statuses)

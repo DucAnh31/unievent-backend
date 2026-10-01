@@ -21,14 +21,14 @@ public class AdminEventCategoryController {
     private final EventCategoryService eventCategoryService;
 
     @PostMapping()
-    ResponseEntity<ApiResponse<EventCategoryResponse>> createEventCategory(@Valid @RequestBody CreateEventCategoryRequest request)
+    public ResponseEntity<ApiResponse<EventCategoryResponse>> createEventCategory(@Valid @RequestBody CreateEventCategoryRequest request)
     {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(eventCategoryService.createEventCategory(request)));
     }
 
     @PatchMapping("/{eventCategoryId}")
-    ResponseEntity<ApiResponse<EventCategoryResponse>> createEventCategory(
+    public ResponseEntity<ApiResponse<EventCategoryResponse>> updateEventCategory(
             @PathVariable Long eventCategoryId,
             @Valid @RequestBody UpdateEventCategoryRequest request)
     {
@@ -37,7 +37,7 @@ public class AdminEventCategoryController {
     }
 
     @DeleteMapping("/{eventCategoryId}")
-    ResponseEntity<ApiResponse<EventCategoryResponse>> createEventCategory(@PathVariable Long eventCategoryId)
+    public ResponseEntity<ApiResponse<EventCategoryResponse>> deleteEventCategory(@PathVariable Long eventCategoryId)
     {
         eventCategoryService.deleteEventCategory(eventCategoryId);
         return ResponseEntity.status(HttpStatus.OK)

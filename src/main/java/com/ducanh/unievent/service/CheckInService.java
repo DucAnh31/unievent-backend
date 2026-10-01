@@ -2,6 +2,7 @@ package com.ducanh.unievent.service;
 
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.common.enums.RegistrationStatus;
+import com.ducanh.unievent.common.util.PageableFactoryUtil;
 import com.ducanh.unievent.dto.request.CheckInRequest;
 import com.ducanh.unievent.dto.response.CheckInCodeResponse;
 import com.ducanh.unievent.dto.response.CheckInResponse;
@@ -20,12 +21,16 @@ import com.ducanh.unievent.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.DialectOverride;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.support.PageableUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class CheckInService {
     private final EventRepository eventRepository;
     private final CheckInRepository checkInRepository;
     private final CheckInMapper checkInMapper;
+    private static final Set<String> ALLOWED_CHECK_IN_SORT_FIELDS = Set.of("checkInTime");
 
     @Transactional
     public CheckInResponse checkIn(Long eventId, CheckInRequest request)
@@ -109,15 +115,18 @@ public class CheckInService {
         }
     }
 
-    public List<CheckInResponse> getEventCheckIns(Long eventId)
+    public Page<CheckInResponse> getEventCheckIns(Long eventId, int page, int size, String sort)
     {
         User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        List<CheckIn> checkIns = checkInRepository.findByRegistration_Event_Id(eventId);
+        Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_CHECK_IN_SORT_FIELDS);
 
-        return checkInMapper.toListCheckInResponse(checkIns);
+        return checkInRepository.findByRegistration_Event_Id(eventId, pageable)
+                .map(checkIn -> checkInMapper.toCheckInResponse(checkIn));
+
+
 
     }
 }

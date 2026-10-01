@@ -1,7 +1,8 @@
-package com.ducanh.unievent.dto.response;
+package com.ducanh.unievent.dto.request;
 
 import com.ducanh.unievent.common.enums.UserRole;
 import com.ducanh.unievent.common.enums.UserStatus;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,12 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserResponse {
-    private Long id;
-    private String fullName;
-    private String username;
-    private String email;
-    private String studentCode;
+public class UserFilterRequest {
+    @Size(max = 200, message = "Keyword must not exceed 200 character")
+    private String keyword;
     private UserRole role;
     private UserStatus status;
 }

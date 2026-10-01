@@ -2,9 +2,10 @@ package com.ducanh.unievent.service;
 
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.common.enums.RegistrationStatus;
+import com.ducanh.unievent.common.util.PageableFactoryUtil;
+import com.ducanh.unievent.dto.request.RegistrationFilterRequest;
 import com.ducanh.unievent.dto.response.CheckInCodeResponse;
 import com.ducanh.unievent.dto.response.EventRegistrationResponse;
-import com.ducanh.unievent.dto.response.OrganizerRegistrationResponse;
 import com.ducanh.unievent.entity.Event;
 import com.ducanh.unievent.entity.Registration;
 import com.ducanh.unievent.entity.User;
@@ -14,12 +15,18 @@ import com.ducanh.unievent.mapper.EventRegistrationMapper;
 import com.ducanh.unievent.repository.EventRepository;
 import com.ducanh.unievent.repository.EventRegistrationRepository;
 import com.ducanh.unievent.security.SecurityHelper;
+import com.ducanh.unievent.specification.RegistrationSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.HTMLDocument;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -29,6 +36,8 @@ public class EventRegistrationService {
     private final EventRepository eventRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final EventRegistrationMapper eventRegistrationMapper;
+    private static final Set<String> ALLOWED_REGISTRATION_SORT_FIELDS = Set.of("registeredAt");
+
 
     @Transactional
     public EventRegistrationResponse registerEvent(Long eventId)
@@ -112,13 +121,19 @@ public class EventRegistrationService {
         return eventRegistrationMapper.toRegistrationEventResponse(registration);
     }
 
-    public List<EventRegistrationResponse> getMyRegistrations()
+    public Page<EventRegistrationResponse> getMyRegistrations(
+            int page,
+            int size,
+            String sort
+    )
     {
         User user = securityHelper.getCurrentUser();
 
-        List<Registration> registrations = eventRegistrationRepository.findAllByUserId(user.getId());
+        Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_REGISTRATION_SORT_FIELDS);
 
-        return eventRegistrationMapper.toListEventRegistrationResponse(registrations);
+        return eventRegistrationRepository.findAllByUser_Id(user.getId(), pageable)
+                .map(registration -> eventRegistrationMapper.toRegistrationEventResponse(registration));
+
     }
 
     public CheckInCodeResponse getMyCheckInCode(Long registrationId)
@@ -138,16 +153,26 @@ public class EventRegistrationService {
                 .build();
     }
 
-    public List<OrganizerRegistrationResponse> getEventRegistrations(Long eventId)
+    public Page<EventRegistrationResponse> getEventRegistrations(
+            Long eventId,
+            RegistrationFilterRequest filter,
+            int page,
+            int size,
+            String sort
+            )
     {
         User organizer = securityHelper.getCurrentUser();
 
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        List<Registration> registrations = eventRegistrationRepository.findAllByEvent_IdAndEvent_Organizer_Id(eventId, organizer.getId());
+        Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_REGISTRATION_SORT_FIELDS);
 
-        return eventRegistrationMapper.toOrganizerRegistrationResponses(registrations);
+        Specification<Registration> specification = RegistrationSpecification.buildRegistrationSpecification(eventId, filter);
+
+        return eventRegistrationRepository.findAll(specification, pageable)
+                .map(registration -> eventRegistrationMapper.toRegistrationEventResponse(registration));
+
     }
 
     @Transactional

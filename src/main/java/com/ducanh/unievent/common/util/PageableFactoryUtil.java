@@ -40,6 +40,9 @@ public final class PageableFactoryUtil {
 
         Sort ordering = Sort.by(new Sort.Order(direction, field));
 
+        if(!"id".equals(field))
+            ordering = ordering.and(Sort.by(Sort.Order.asc("id")));
+
         return PageRequest.of(page, size, ordering);
     }
 }

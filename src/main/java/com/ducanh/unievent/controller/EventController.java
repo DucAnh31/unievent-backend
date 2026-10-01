@@ -36,8 +36,8 @@ public class EventController {
     @GetMapping()
     public ResponseEntity<ApiResponse<PageResponse<EventResponse>>> getPublicEvents(
             @ModelAttribute @Valid EventFilterRequest filter,
-            @RequestParam(required = false, defaultValue = "0") Integer page,
-            @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size,
             @RequestParam(required = false, defaultValue = "startTime,asc") String sort
             )
     {

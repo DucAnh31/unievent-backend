@@ -63,9 +63,9 @@ public class UserService {
     public void changePassword(ChangePasswordRequest request)
     {
         User user = securityHelper.getCurrentUser();
-        if(encoder.matches(request.getCurrentPassword(), user.getPassword()))
-
-        user.setPassword(encoder.encode(request.getPassword()));
+        if(!encoder.matches(request.getCurrentPassword(), user.getPassword()))
+            throw new ApiException(ErrorCode.INVALID_CURRENT_PASSWORD);
+        user.setPassword(encoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 }

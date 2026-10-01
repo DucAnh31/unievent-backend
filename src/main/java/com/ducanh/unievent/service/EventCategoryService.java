@@ -1,6 +1,6 @@
 package com.ducanh.unievent.service;
 
-import aj.org.objectweb.asm.commons.TryCatchBlockSorter;
+import com.ducanh.unievent.common.util.PageableFactoryUtil;
 import com.ducanh.unievent.dto.request.CreateEventCategoryRequest;
 import com.ducanh.unievent.dto.request.UpdateEventCategoryRequest;
 import com.ducanh.unievent.dto.response.EventCategoryResponse;
@@ -13,10 +13,12 @@ import com.ducanh.unievent.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,7 @@ public class EventCategoryService {
     private final EventCategoryRepository eventCategoryRepository;
     private final EventCategoryMapper eventCategoryMapper;
     private final EventRepository eventRepository;
+    private static final Set<String> ALLOWED_CATEGORY_SORT_FIELDS = Set.of("name", "createdAt");
 
     public EventCategoryResponse getEventCategory(Long eventCategoryId)
     {
@@ -33,10 +36,17 @@ public class EventCategoryService {
                         .orElseThrow(() -> new ApiException(ErrorCode.EVENT_CATEGORY_NOT_FOUND)));
     }
 
-    public List<EventCategoryResponse> getEventCategories()
+    public Page<EventCategoryResponse> getEventCategories(int page, int size, String sort, String keyword)
     {
-        return eventCategoryMapper.toListEventCategoryResponse(
-                eventCategoryRepository.findAll());
+
+        Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_CATEGORY_SORT_FIELDS);
+
+        keyword = (keyword == null) ? "" : keyword.trim();
+
+        return eventCategoryRepository.findByNameContainingIgnoreCase(keyword, pageable)
+                .map(eventCategory -> eventCategoryMapper.toEventCategoryResponse(eventCategory));
+
+
     }
 
     @Transactional

@@ -15,7 +15,12 @@ import java.time.Instant;
 public class EventRegistrationResponse {
     private Long id;
     private RegistrationStatus status;
-    private Long eventId;
+    private String checkInCode;
+
+
     private Instant registeredAt;
     private Instant cancelledAt;
+
+    private Long eventId;
+    private Long userId;
 }

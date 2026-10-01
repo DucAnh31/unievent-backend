@@ -27,8 +27,8 @@ spring:
             enable: true
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  valid-duration: 60000 # ms
-  refresh-duration: 120000 # ms
+  valid-duration: 600000 # ms
+  refresh-duration: 1200000 # ms
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL}

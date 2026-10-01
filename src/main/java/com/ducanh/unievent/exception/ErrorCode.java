@@ -38,6 +38,9 @@ public enum ErrorCode {
     EVENT_CANNOT_BE_DELETED(HttpStatus.BAD_REQUEST, "Event cannot be deleted"),
     EVENT_CANNOT_CLOSE_REGISTRATION(HttpStatus.BAD_REQUEST, "Event cannot be closed registration"),
     EVENT_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "Event cannot be canceled"),
+    EVENT_CANNOT_BE_SUMMITED(HttpStatus.BAD_REQUEST, "Event cannot be summited"),
+    EVENT_CANNOT_BE_APPROVED(HttpStatus.BAD_REQUEST, "Event cannot be approved"),
+    EVENT_CANNOT_BE_REJECTED(HttpStatus.BAD_REQUEST, "Event cannot be rejected"),
     INVALID_EVENT_TIME(HttpStatus.BAD_REQUEST, "Invalid event time"),
 
     REGISTRATION_NOT_OPEN(HttpStatus.BAD_REQUEST, "Event registration is not open"),

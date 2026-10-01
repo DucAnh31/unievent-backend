@@ -27,7 +27,7 @@ public class EventFilterRequest {
 
     private List<EventStatus> statuses;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // cho viec chuyen doi tu url vao object, createEventReq khong can vi co json roi
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) // cho viec chuyen doi tu url(hoac form data) vao object, createEventReq khong can vi co json roi
     private Instant from;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

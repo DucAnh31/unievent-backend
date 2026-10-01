@@ -31,6 +31,7 @@ public class UserController {
                 ApiResponse.success(userService.updateMyProfile(request)));
     }
 
+    //chua test
     @PatchMapping("/me/password")
     public ResponseEntity<ApiResponse<Void>> changeMyPassword(@Valid @RequestBody ChangePasswordRequest request)
     {
