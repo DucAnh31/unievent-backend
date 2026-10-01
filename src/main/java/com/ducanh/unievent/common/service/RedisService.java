@@ -5,6 +5,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +44,21 @@ public class RedisService {
 
     public void expire(String key, long timeout, TimeUnit unit) {
         stringRedisTemplate.expire(key, timeout, unit);
+    }
+
+    public boolean setIfAbsentWithTTL(String key, String value, Duration ttl) {
+        return Boolean.TRUE.equals(
+                stringRedisTemplate.opsForValue()
+                        .setIfAbsent(key, value, ttl)
+        );
+    }
+    public long increment(String key) {
+        Long result = stringRedisTemplate.opsForValue().increment(key);
+        return result;
+    }
+
+    public String getAndDelete(String key) {
+        return stringRedisTemplate.opsForValue().getAndDelete(key);
     }
 
 }

@@ -59,10 +59,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException exception) {
+        log.error("global exception: ",exception);
 
         return ResponseEntity
                 .status(ErrorCode.FORBIDDEN.getStatus())
                 .body(ApiResponse.error(ErrorCode.FORBIDDEN.getDefaultMessage(), ErrorDetail.of(ErrorCode.FORBIDDEN.name())));
+    }
+
+    @ExceptionHandler(value = RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException exception) {
+        log.error("global exception: ",exception);
+
+        return ResponseEntity
+                .status(ErrorCode.UNCATEGORIZED_EXCEPTION.getStatus())
+                .body(ApiResponse.error(ErrorCode.UNCATEGORIZED_EXCEPTION.getDefaultMessage(), ErrorDetail.of(ErrorCode.UNCATEGORIZED_EXCEPTION.name())));
     }
 
     private ErrorDetail.FieldError toFieldError(FieldError fe) {

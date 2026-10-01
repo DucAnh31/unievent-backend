@@ -48,6 +48,9 @@ public class User {
     @Column(name = "status", nullable = false)
     private UserStatus status;
 
+    @Column(name = "email_verified_at")
+    private Instant emailVerifiedAt;
+
 
 
     @CreatedDate

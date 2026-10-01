@@ -33,6 +33,8 @@ public class Registration {
     @Column(name = "status", nullable = false)
     private RegistrationStatus status;
 
+    @Column(name = "check_in_code", unique = true)
+    private String checkInCode;
 
     @Column(name = "registered_at", nullable = false)
     private Instant registeredAt;

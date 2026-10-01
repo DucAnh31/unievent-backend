@@ -1,6 +1,7 @@
 package com.ducanh.unievent.security.service;
 
 import com.ducanh.unievent.common.service.RedisService;
+import com.ducanh.unievent.common.util.Sha256Util;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.repository.UserRepository;
@@ -43,7 +44,7 @@ public class RefreshTokenService {
     public String createRefreshToken(Long userId) {
 
         String rawToken = UUID.randomUUID().toString();
-        String tokenHash = hashToken(rawToken);
+        String tokenHash = Sha256Util.sha256(rawToken);
 
         String familyId = UUID.randomUUID().toString();
 
@@ -64,7 +65,7 @@ public class RefreshTokenService {
 
     public Long verifyAndGetUserId(String rawToken) {
 
-        String tokenHash = hashToken(rawToken);
+        String tokenHash = Sha256Util.sha256(rawToken);
         String tokenKey = buildTokenKey(tokenHash);
 
 
@@ -96,7 +97,7 @@ public class RefreshTokenService {
 
     public void revokeToken(String rawToken) {
 
-        String tokenHash = hashToken(rawToken);
+        String tokenHash = Sha256Util.sha256(rawToken);
         String tokenKey = buildTokenKey(tokenHash);
 
         if (Boolean.FALSE.equals(redisService.hasKey(tokenKey))) {
@@ -108,7 +109,7 @@ public class RefreshTokenService {
 
     public String rotateRefreshToken(String oldRawToken, Long userId) {
 
-        String oldTokenHash = hashToken(oldRawToken);
+        String oldTokenHash = Sha256Util.sha256(oldRawToken);
         String oldTokenKey = buildTokenKey(oldTokenHash);
 
         if (Boolean.FALSE.equals(redisService.hasKey(oldTokenKey))) {
@@ -134,7 +135,7 @@ public class RefreshTokenService {
         redisService.putHash(oldTokenKey, FIELD_REVOKED, "true");
 
         String newRawToken = UUID.randomUUID().toString();
-        String newTokenHash = hashToken(newRawToken);
+        String newTokenHash = Sha256Util.sha256(newRawToken);
         String newTokenKey = buildTokenKey(newTokenHash);
 
         redisService.putHash(newTokenKey, FIELD_USER_ID, userId.toString());
@@ -158,16 +159,6 @@ public class RefreshTokenService {
     }
 
 
-    private String hashToken(String token) {
-
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
-
-        } catch (NoSuchAlgorithmException e) {
-            throw new ApiException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     private String buildTokenKey(String tokenHash) {
         return TOKEN_KEY_PREFIX + tokenHash;

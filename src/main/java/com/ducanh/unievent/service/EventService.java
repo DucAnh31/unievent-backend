@@ -1,25 +1,25 @@
 package com.ducanh.unievent.service;
 
-import com.ducanh.unievent.common.PageResponse;
 import com.ducanh.unievent.common.enums.EventStatus;
+import com.ducanh.unievent.common.enums.RegistrationStatus;
+import com.ducanh.unievent.common.util.PageableFactoryUtil;
 import com.ducanh.unievent.dto.request.CreateEventRequest;
 import com.ducanh.unievent.dto.request.EventFilterRequest;
 import com.ducanh.unievent.dto.request.UpdateEventRequest;
 import com.ducanh.unievent.dto.response.EventResponse;
+import com.ducanh.unievent.dto.response.EventStatisticsResponse;
 import com.ducanh.unievent.entity.Event;
 import com.ducanh.unievent.entity.EventCategory;
 import com.ducanh.unievent.entity.User;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.EventMapper;
-import com.ducanh.unievent.repository.EventCategoryRepository;
-import com.ducanh.unievent.repository.EventRepository;
-import com.ducanh.unievent.repository.UserRepository;
+import com.ducanh.unievent.repository.*;
+import com.ducanh.unievent.security.SecurityHelper;
 import com.ducanh.unievent.security.custom.CustomUserDetails;
 import com.ducanh.unievent.specification.EventSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.data.autoconfigure.web.DataWebProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +40,9 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final EventCategoryRepository eventCategoryRepository;
+    private final SecurityHelper securityHelper;
+    private final CheckInRepository checkInRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
 
     private final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "title",
@@ -48,13 +51,13 @@ public class EventService {
             "createdAt"
     );
 
-    private User getCurrentUser()
-    {
-        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userRepository.findById(userDetails.getId()).orElseThrow(
-                () -> new ApiException(ErrorCode.USER_NOT_FOUND));
-        return user;
-    }
+//    private User getCurrentUser()
+//    {
+//        CustomUserDetails userDetails = (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+//        User user = userRepository.findById(userDetails.getId()).orElseThrow(
+//                () -> new ApiException(ErrorCode.USER_NOT_FOUND));
+//        return user;
+//    }
 
 
 
@@ -63,7 +66,7 @@ public class EventService {
     {
         validateEventTime(request.getStartTime(), request.getEndTime(), request.getRegistrationDeadline());
 
-        User user = getCurrentUser();
+        User user = securityHelper.getCurrentUser();
         EventCategory category = eventCategoryRepository
                 .findById(request.getCategoryId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_CATEGORY_NOT_FOUND));
@@ -78,15 +81,14 @@ public class EventService {
 
     public List<EventResponse> getMyEvents()
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         List<Event> events = eventRepository.findAllByOrganizerId(organizer.getId());
-
         return  eventMapper.toListEventResponse(events);
     }
 
     public EventResponse getMyEvent(Long eventId)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
         return eventMapper.toEventResponse(event);
@@ -95,7 +97,7 @@ public class EventService {
     @Transactional
     public EventResponse updateMyEvent(Long eventId, UpdateEventRequest request)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -119,7 +121,7 @@ public class EventService {
     @Transactional
     public void deleteMyEvent(Long eventId)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -133,7 +135,7 @@ public class EventService {
     @Transactional
     public EventResponse publishEvent(Long eventId)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -148,7 +150,7 @@ public class EventService {
     @Transactional
     public EventResponse closeRegistration(Long eventId)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -162,7 +164,7 @@ public class EventService {
     @Transactional
     public EventResponse cancelEvent(Long eventId)
     {
-        User organizer = getCurrentUser();
+        User organizer = securityHelper.getCurrentUser();
         Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
@@ -266,42 +268,14 @@ public class EventService {
             throw new ApiException(ErrorCode.INVALID_EVENT_TIME);
         }
 
-        Pageable pageable = buildPageable(page, size, sort);
+        Pageable pageable = PageableFactoryUtil.create(page, size, sort, ALLOWED_SORT_FIELDS);
 
-        Specification<Event> specification = EventSpecification.isPublic()
-                .and(EventSpecification.hasStatus(filter.getStatuses()))
-                .and(EventSpecification.hasCategoryId(filter.getCategoryIds()))
-                .and(EventSpecification.hasKeyword(filter.getKeyword()))
-                .and(EventSpecification.startFrom(filter.getFrom()))
-                .and(EventSpecification.startBefore(filter.getTo()));
+        Specification<Event> specification = EventSpecification.buildEventSpecification(filter);
 
 
         return eventRepository.findAll(specification, pageable)
                 .map(event -> eventMapper.toEventResponse(event));
 
-    }
-
-    private Pageable buildPageable(int page, int size, String sort)
-    {
-        StringTokenizer stringTokenizer = new StringTokenizer(sort, ",");
-        ArrayList<String> part = new ArrayList<>();
-        while (stringTokenizer.hasMoreTokens())
-            part.add(stringTokenizer.nextToken());
-
-        if(part.size() != 2)
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-
-        String field = part.get(0).trim();
-
-        if(!ALLOWED_SORT_FIELDS.contains(field))
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-
-        Sort.Direction direction = Sort.Direction.fromOptionalString(part.get(1).trim())
-                .orElseThrow(() -> new ApiException(ErrorCode.VALIDATION_ERROR));
-
-        Sort order = Sort.by(new Sort.Order(direction, field), new Sort.Order(direction, "id"));
-
-        return PageRequest.of(page, size, order);
     }
 
 
@@ -310,6 +284,20 @@ public class EventService {
     {
         if(!start.isBefore(end) || !start.isAfter(registrationDeadline))
             throw new ApiException(ErrorCode.INVALID_EVENT_TIME);
+    }
+
+    public EventStatisticsResponse getMyEventStatistics(Long eventId)
+    {
+        User organizer = securityHelper.getCurrentUser();
+
+        Event event = eventRepository.findByIdAndOrganizerId(eventId, organizer.getId())
+                .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
+        return EventStatisticsResponse.builder()
+                .eventId(eventId)
+                .checkedInCount(checkInRepository.countByRegistration_Event_Id(eventId))
+                .maxParticipants(event.getMaxParticipants())
+                .registeredCount(eventRegistrationRepository.countByEvent_IdAndStatus(eventId, RegistrationStatus.REGISTERED))
+                .build();
     }
 
 

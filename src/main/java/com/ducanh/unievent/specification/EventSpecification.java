@@ -1,14 +1,23 @@
 package com.ducanh.unievent.specification;
 
 import com.ducanh.unievent.common.enums.EventStatus;
+import com.ducanh.unievent.dto.request.EventFilterRequest;
 import com.ducanh.unievent.entity.Event;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 
 public class EventSpecification {
+
+    public static Specification<Event> buildEventSpecification(EventFilterRequest filter) {
+        return EventSpecification.isPublic()
+                .and(hasStatus(filter.getStatuses()))
+                .and(hasCategoryId(filter.getCategoryIds()))
+                .and(hasKeyword(filter.getKeyword()))
+                .and(startFrom(filter.getFrom()))
+                .and(startBefore(filter.getTo()));
+    }
 
     public static Specification<Event> isPublic()
     {
@@ -19,7 +28,7 @@ public class EventSpecification {
     public static Specification<Event> hasStatus(List<EventStatus> statuses)
     {
         return (root, query, criteriaBuilder)
-                -> statuses == null
+                -> (statuses == null || statuses.isEmpty())
                     ? criteriaBuilder.conjunction()
                     : root.get("status").in(statuses);
     }
@@ -27,7 +36,7 @@ public class EventSpecification {
     public static Specification<Event> hasCategoryId(List<Long> categoryIds)
     {
         return (root, query, criteriaBuilder)
-                -> categoryIds == null
+                -> (categoryIds == null || categoryIds.isEmpty())
                     ? criteriaBuilder.conjunction()
                     : root.get("category").get("id").in(categoryIds);
     }
@@ -48,7 +57,7 @@ public class EventSpecification {
 
                     String pattern = "%" + escaped + "%";
 
-                    return criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern);
+                    return criteriaBuilder.like(criteriaBuilder.lower(root.get("title")), pattern, '!');
                 };
     }
 

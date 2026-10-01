@@ -2,13 +2,11 @@ package com.ducanh.unievent.repository;
 
 import com.ducanh.unievent.common.enums.EventStatus;
 import com.ducanh.unievent.entity.Event;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -27,13 +25,6 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
             """)
     public List<Event> findAllByOrganizerId(@Param("organizerId")Long organizerId);
 
-    @Query("""
-            select e
-            from Event e
-            join fetch e.category
-            join fetch e.organizer
-            where e.id = :eventId and e.organizer.id = :organizer
-            """)
     public Optional<Event> findByIdAndOrganizerId(@Param("eventId") Long eventId, @Param(("organizer")) Long organizerId);
 
 
@@ -42,4 +33,10 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
     @EntityGraph(attributePaths = {"category", "organizer"})
     @Override
     Page<Event> findAll(Specification<Event> spec, Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Event> findForRegistrationById(Long eventId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Event> findForRegistrationByIdAndOrganizer_Id(Long eventId, Long organizerId);
 }

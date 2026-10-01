@@ -1,6 +1,7 @@
 package com.ducanh.unievent.controller;
 
 import com.ducanh.unievent.common.ApiResponse;
+import com.ducanh.unievent.dto.request.ChangePasswordRequest;
 import com.ducanh.unievent.dto.request.UpdateUserRequest;
 import com.ducanh.unievent.dto.response.UserResponse;
 import com.ducanh.unievent.service.UserService;
@@ -28,5 +29,13 @@ public class UserController {
     {
         return ResponseEntity.status(HttpStatus.OK).body(
                 ApiResponse.success(userService.updateMyProfile(request)));
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<ApiResponse<Void>> changeMyPassword(@Valid @RequestBody ChangePasswordRequest request)
+    {
+        userService.changePassword(request);
+        return ResponseEntity.status(HttpStatus.OK).body(
+                ApiResponse.success(null));
     }
 }

@@ -1,4 +1,4 @@
-package com.ducanh.unievent.controller;
+package com.ducanh.unievent.controller.admin;
 
 import com.ducanh.unievent.common.ApiResponse;
 import com.ducanh.unievent.dto.request.ChangeUserRoleRequest;

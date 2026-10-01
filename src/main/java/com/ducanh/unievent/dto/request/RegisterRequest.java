@@ -23,7 +23,7 @@ public class RegisterRequest {
 
     @NotBlank(message = "Email must not be blank")
     @Size(max = 200, message = "Email must not exceed 200 characters")
-    @Email
+    @Email(message = "Invalid email format")
     private String email;
 
     @NotBlank(message = "Password must not be blank")

@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+    UNCATEGORIZED_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "Uncategorized error"),
+
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "Bad Request"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found"),
     USER_EXISTED(HttpStatus.BAD_REQUEST, "User existed"),
@@ -38,9 +40,31 @@ public enum ErrorCode {
     EVENT_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "Event cannot be canceled"),
     INVALID_EVENT_TIME(HttpStatus.BAD_REQUEST, "Invalid event time"),
 
+    REGISTRATION_NOT_OPEN(HttpStatus.BAD_REQUEST, "Event registration is not open"),
+    REGISTRATION_NOT_FOUND(HttpStatus.BAD_REQUEST, "Event registration is not found"),
+    REGISTRATION_DEADLINE_PASSED(HttpStatus.BAD_REQUEST, "Registration deadline has passed"),
+    EVENT_FULL(HttpStatus.BAD_REQUEST, "Event is full"),
+    REGISTRATION_CANNOT_CANCEL(HttpStatus.BAD_REQUEST, "Cannot cancel registration"),
+    REGISTRATION_ALREADY_REGISTERED(HttpStatus.BAD_REQUEST, "Already registered for this event"),
+    REGISTRATION_ALREADY_CANCELLED(HttpStatus.BAD_REQUEST, "Already cancelled for this event"),
 
+    CHECK_IN_CODE_INVALID(HttpStatus.BAD_REQUEST, "Check in code invalid"),
+    CHECK_IN_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "Check in not allowed"),
+    ALREADY_CHECKED_IN(HttpStatus.BAD_REQUEST, "Already check in"),
 
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error"),
+
+    TOO_MANY_OTP_ATTEMPTS(HttpStatus.BAD_REQUEST, "Too many otp attempts"),
+    INVALID_RESET_TOKEN(HttpStatus.BAD_REQUEST, "Reset token invalid"),
+    INVALID_OTP(HttpStatus.BAD_REQUEST, "OTP invalid"),
+    TOO_MANY_OTP_REQUESTS(HttpStatus.BAD_REQUEST, "Too many otp requests"),
+
+    EMAIL_NOT_VERIFIED(HttpStatus.BAD_REQUEST, "Email not verified"),
+    TOO_MANY_VERIFICATION_EMAIL_REQUESTS(HttpStatus.BAD_REQUEST, "Too many verification email request"),
+
+    INVALID_CURRENT_PASSWORD(HttpStatus.BAD_REQUEST, "Current password invalid"),
+
+    INVALID_EMAIL_VERIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "Email verification token invalid");
 
     private final HttpStatus status;
     private final String defaultMessage;

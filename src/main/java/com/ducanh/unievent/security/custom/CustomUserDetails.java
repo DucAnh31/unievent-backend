@@ -16,6 +16,7 @@ public class CustomUserDetails implements UserDetails {
     private String email;
     private Collection<? extends GrantedAuthority> authorities;
     private UserStatus status;
+    private Boolean emailVerified;
 
     private CustomUserDetails(
             Long id,
@@ -23,13 +24,15 @@ public class CustomUserDetails implements UserDetails {
             String password,
             String email,
             Collection<? extends GrantedAuthority> authorities,
-            UserStatus status) {
+            UserStatus status,
+            Boolean emailVerified) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
         this.authorities = authorities;
         this.status = status;
+        this.emailVerified = emailVerified;
     }
 
     public static CustomUserDetails build(User user) {
@@ -41,7 +44,8 @@ public class CustomUserDetails implements UserDetails {
                 user.getPassword(),
                 user.getEmail(),
                 authorities,
-                user.getStatus()
+                user.getStatus(),
+                user.getEmailVerifiedAt() != null
         );
     }
 
@@ -67,6 +71,10 @@ public class CustomUserDetails implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
     }
 
     @Override

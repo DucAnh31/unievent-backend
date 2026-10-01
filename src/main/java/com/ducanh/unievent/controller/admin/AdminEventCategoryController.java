@@ -1,4 +1,4 @@
-package com.ducanh.unievent.controller;
+package com.ducanh.unievent.controller.admin;
 
 import com.ducanh.unievent.common.ApiResponse;
 import com.ducanh.unievent.dto.request.CreateEventCategoryRequest;
@@ -12,8 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("/api/v1/admin/categories")

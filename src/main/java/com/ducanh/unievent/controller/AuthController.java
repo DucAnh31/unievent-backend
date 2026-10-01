@@ -1,11 +1,9 @@
 package com.ducanh.unievent.controller;
 
 import com.ducanh.unievent.common.ApiResponse;
-import com.ducanh.unievent.dto.request.LoginRequest;
-import com.ducanh.unievent.dto.request.LogoutRequest;
-import com.ducanh.unievent.dto.request.RefreshTokenRequest;
-import com.ducanh.unievent.dto.request.RegisterRequest;
+import com.ducanh.unievent.dto.request.*;
 import com.ducanh.unievent.dto.response.AuthenticationResponse;
+import com.ducanh.unievent.dto.response.VerifyPasswordResponse;
 import com.ducanh.unievent.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +21,11 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthenticationResponse>> register(@Valid @RequestBody RegisterRequest request)
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request)
     {
+        authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(authService.register(request)));
+                .body(ApiResponse.success(null));
     }
 
     @PostMapping("/login")
@@ -50,4 +49,53 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(null));
     }
+
+    //forgot password
+
+    @PostMapping("/password/forgot")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(null));
+    }
+
+    @PostMapping("/password/otp/verify")
+    public ResponseEntity<ApiResponse<VerifyPasswordResponse>> verifyPasswordOtp(
+            @Valid @RequestBody VerifyPasswordRequest request)
+    {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(authService.verifyPasswordOtp(request)));
+    }
+
+    @PostMapping("/password/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request)
+    {
+        authService.resetPassword(request);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(null,"Password updated successfully" ));
+
+
+    }
+
+    @PostMapping("/email/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request)
+    {
+        authService.verifyEmail(request);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(null));
+    }
+
+    @PostMapping("/email/verification-resend")
+    public ResponseEntity<ApiResponse<Void>> resendVerificationEmail(@Valid @RequestBody ResendVerificationEmailRequest request)
+    {
+        authService.resendVerificationEmail(request);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(null));
+    }
+
 }
