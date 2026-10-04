@@ -46,7 +46,6 @@ public class EventSpecification {
         return (root, query, criteriaBuilder) -> criteriaBuilder.and(
                 criteriaBuilder.notEqual(root.get("status"), EventStatus.DRAFT),
                 criteriaBuilder.notEqual(root.get("status"), EventStatus.PENDING_APPROVAL));
-        // -> criteriaBuilder.notEqual(root.get("status"), EventStatus.DRAFT);
     }
 
     public static Specification<Event> hasStatus(List<EventStatus> statuses) {

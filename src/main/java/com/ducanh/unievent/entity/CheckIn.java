@@ -22,7 +22,7 @@ public class CheckIn {
     @Column(name = "check_in_time", nullable = false)
     private Instant checkInTime;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "registration_id", nullable = false, unique = true)
     private Registration registration;
 }

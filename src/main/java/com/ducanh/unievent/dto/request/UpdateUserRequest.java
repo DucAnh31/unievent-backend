@@ -1,6 +1,5 @@
 package com.ducanh.unievent.dto.request;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -17,9 +16,4 @@ public class UpdateUserRequest {
     @NotBlank(message = "Full name must not be blank")
     @Size(max = 200, message = "Full name must not exceed 200 characters")
     private String fullName;
-
-    @NotBlank(message = "Email must not be blank")
-    @Size(max = 200, message = "Email must not exceed 200 characters")
-    @Email(message = "Invalid email format")
-    private String email;
 }

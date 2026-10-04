@@ -12,9 +12,7 @@ import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -64,17 +62,17 @@ public class RefreshTokenService {
             throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
 
-        String revoked = redisService.getHash(tokenKey, FIELD_REVOKED);
-        String familyId = redisService.getHash(tokenKey, FIELD_FAMILY_ID);
-        String familyStatus = redisService.getHash(buildFamilyKey(familyId), FIELD_STATUS);
-        String userId = redisService.getHash(tokenKey, FIELD_USER_ID);
+        String revoked = getRequiredHashValue(tokenKey, FIELD_REVOKED);
+        String familyId = getRequiredHashValue(tokenKey, FIELD_FAMILY_ID);
+        String familyStatus = getRequiredHashValue(buildFamilyKey(familyId), FIELD_STATUS);
+        String userId = getRequiredHashValue(tokenKey, FIELD_USER_ID);
 
         if ("true".equals(revoked)) {
             revokeFamily(familyId);
             throw new ApiException(ErrorCode.REFRESH_TOKEN_REUSE_DETECTED);
         }
 
-        if (STATUS_REVOKED.equals(familyStatus)) {
+        if (!STATUS_ACTIVE.equals(familyStatus)) {
             throw new ApiException(ErrorCode.REFRESH_TOKEN_REVOKED);
         }
 
@@ -99,13 +97,12 @@ public class RefreshTokenService {
         String oldTokenKey = buildTokenKey(oldTokenHash);
 
         if (Boolean.FALSE.equals(redisService.hasKey(oldTokenKey))) {
-            log.error("dong 1");
             throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
         }
 
-        String revoked = redisService.getHash(oldTokenKey, FIELD_REVOKED);
-        String familyId = redisService.getHash(oldTokenKey, FIELD_FAMILY_ID);
-        String familyStatus = redisService.getHash(buildFamilyKey(familyId), FIELD_STATUS);
+        String revoked = getRequiredHashValue(oldTokenKey, FIELD_REVOKED);
+        String familyId = getRequiredHashValue(oldTokenKey, FIELD_FAMILY_ID);
+        String familyStatus = getRequiredHashValue(buildFamilyKey(familyId), FIELD_STATUS);
 
         if ("true".equals(revoked)) {
             revokeFamily(familyId);
@@ -152,5 +149,15 @@ public class RefreshTokenService {
 
     private String buildFamilyKey(String familyId) {
         return FAMILY_KEY_PREFIX + familyId;
+    }
+
+    private String getRequiredHashValue(String key, String field) {
+        String value = redisService.getHash(key, field);
+
+        if (value == null || value.isBlank()) {
+            throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+        }
+
+        return value;
     }
 }

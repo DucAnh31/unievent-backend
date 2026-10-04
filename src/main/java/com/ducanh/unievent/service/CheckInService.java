@@ -45,7 +45,7 @@ public class CheckInService {
         User organizer = securityHelper.getCurrentUser();
 
         Event event = eventRepository
-                .findForRegistrationByIdAndOrganizer_Id(eventId, organizer.getId())
+                .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
         Instant now = Instant.now();
@@ -53,7 +53,7 @@ public class CheckInService {
 
         boolean validStatus = status == EventStatus.PUBLISHED || status == EventStatus.REGISTRATION_CLOSED;
 
-        if (!validStatus || !now.isBefore(event.getEndTime())) {
+        if (!validStatus || !now.isBefore(event.getEndTime()) || now.isBefore(event.getStartTime())) {
             throw new ApiException(ErrorCode.CHECK_IN_NOT_ALLOWED);
         }
 

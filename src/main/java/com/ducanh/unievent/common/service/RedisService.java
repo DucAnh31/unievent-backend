@@ -30,7 +30,8 @@ public class RedisService {
     }
 
     public String getHash(String key, String hashKey) {
-        return stringRedisTemplate.opsForHash().get(key, hashKey).toString();
+        Object value = stringRedisTemplate.opsForHash().get(key, hashKey);
+        return value == null ? null : value.toString();
     }
 
     public Boolean hasKey(String key) {

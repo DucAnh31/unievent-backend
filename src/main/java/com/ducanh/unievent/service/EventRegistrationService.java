@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ducanh.unievent.common.enums.EventStatus;
@@ -22,6 +23,7 @@ import com.ducanh.unievent.entity.User;
 import com.ducanh.unievent.exception.ApiException;
 import com.ducanh.unievent.exception.ErrorCode;
 import com.ducanh.unievent.mapper.EventRegistrationMapper;
+import com.ducanh.unievent.repository.CheckInRepository;
 import com.ducanh.unievent.repository.EventRegistrationRepository;
 import com.ducanh.unievent.repository.EventRepository;
 import com.ducanh.unievent.security.SecurityHelper;
@@ -32,13 +34,14 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class EventRegistrationService {
+    private final CheckInRepository checkInRepository;
     private final SecurityHelper securityHelper;
     private final EventRepository eventRepository;
     private final EventRegistrationRepository eventRegistrationRepository;
     private final EventRegistrationMapper eventRegistrationMapper;
     private static final Set<String> ALLOWED_REGISTRATION_SORT_FIELDS = Set.of("registeredAt");
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public EventRegistrationResponse registerEvent(Long eventId) {
         User user = securityHelper.getCurrentUser();
 
@@ -74,7 +77,6 @@ public class EventRegistrationService {
 
         registration.setStatus(RegistrationStatus.REGISTERED);
         registration.setRegisteredAt(Instant.now());
-        registration.setStatus(RegistrationStatus.REGISTERED);
         registration.setCancelledAt(null);
         registration.setCheckInCode(UUID.randomUUID().toString());
 
@@ -92,6 +94,9 @@ public class EventRegistrationService {
         Registration registration = eventRegistrationRepository
                 .findByUser_IdAndEvent_Id(user.getId(), eventId)
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
+
+        if (checkInRepository.existsByRegistration_Id(registration.getId()))
+            throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CHECKED_IN);
 
         if (registration.getStatus() == RegistrationStatus.CANCELLED)
             throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CANCELLED);
@@ -130,7 +135,7 @@ public class EventRegistrationService {
         User user = securityHelper.getCurrentUser();
 
         Registration registration = eventRegistrationRepository
-                .findById(registrationId)
+                .findByIdAndUser_Id(registrationId, user.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.REGISTRATION_NOT_FOUND));
 
         if (registration.getStatus() == RegistrationStatus.CANCELLED) {
@@ -179,6 +184,9 @@ public class EventRegistrationService {
                 || !Instant.now().isBefore(event.getStartTime())) {
             throw new ApiException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
+
+        if (checkInRepository.existsByRegistration_Id(registrationId))
+            throw new ApiException(ErrorCode.REGISTRATION_ALREADY_CHECKED_IN);
 
         registration.setStatus(RegistrationStatus.CANCELLED);
         registration.setCancelledAt(Instant.now());

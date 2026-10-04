@@ -1,6 +1,5 @@
 package com.ducanh.unievent.service;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +15,14 @@ import com.ducanh.unievent.repository.UserRepository;
 import com.ducanh.unievent.security.SecurityHelper;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final SecurityHelper securityHelper;
-    private final PasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
 
     public UserResponse getMyProfile() {
         User user = securityHelper.getCurrentUser();
@@ -37,21 +34,15 @@ public class UserService {
         User user = securityHelper.getCurrentUser();
         userMapper.updateUser(user, request);
 
-        try {
-            user = userRepository.saveAndFlush(user);
-        } catch (DataIntegrityViolationException e) {
-            throw new ApiException(ErrorCode.EMAIL_EXISTED);
-        }
-
-        return userMapper.toUserResponse(user);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         User user = securityHelper.getCurrentUser();
-        if (!encoder.matches(request.getCurrentPassword(), user.getPassword()))
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword()))
             throw new ApiException(ErrorCode.INVALID_CURRENT_PASSWORD);
-        user.setPassword(encoder.encode(request.getNewPassword()));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
 }

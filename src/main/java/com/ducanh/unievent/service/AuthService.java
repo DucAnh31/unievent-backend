@@ -79,6 +79,10 @@ public class AuthService {
     @Transactional
     public void register(RegisterRequest request) {
         User user = userMapper.toUser(request);
+
+        String studentCode = request.getStudentCode();
+        user.setStudentCode((studentCode == null || studentCode.isBlank()) ? null : studentCode.trim());
+
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(UserRole.STUDENT);
         user.setStatus(UserStatus.ACTIVE);
@@ -115,12 +119,14 @@ public class AuthService {
         Long userId = Long.parseLong(userIdValue);
         User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        user.setEmailVerifiedAt(Instant.now());
-        userRepository.save(user);
+        if (user.getEmailVerifiedAt() == null) {
+            user.setEmailVerifiedAt(Instant.now());
+            userRepository.save(user);
+        }
     }
 
     public void resendVerificationEmail(ResendVerificationEmailRequest request) {
-        String key = Sha256Util.sha256(request.getIdentifier());
+        String key = Sha256Util.sha256(request.getIdentifier().trim().toLowerCase());
         String cooldownKey = EMAIL_VERIFY_COOLDOWN_KEY_PREFIX + key;
 
         boolean canSend = redisService.setIfAbsentWithTTL(cooldownKey, "1", Duration.ofSeconds(60));
@@ -176,7 +182,7 @@ public class AuthService {
     }
 
     public VerifyPasswordResponse verifyPasswordOtp(VerifyPasswordRequest request) {
-        String email = request.getEmail();
+        String email = request.getEmail().trim().toLowerCase();
         String emailKey = Sha256Util.sha256(email);
 
         User user = userRepository.findByEmail(email).orElseThrow(() -> new ApiException(ErrorCode.INVALID_OTP));
@@ -210,22 +216,22 @@ public class AuthService {
     }
 
     public void forgotPassword(ForgotPasswordRequest request) {
-        String email = request.getEmail();
+        String email = request.getEmail().trim().toLowerCase();
         String emailKey = Sha256Util.sha256(email);
-
-        if (!userRepository.existsByEmail(email)) {
-            return;
-        }
 
         String cooldownKey = OTP_COOLDOWN_KEY_PREFIX + emailKey;
         String sendCountKey = OTP_SEND_COUNT_KEY_PREFIX + emailKey;
 
         boolean canSend = redisService.setIfAbsentWithTTL(cooldownKey, "1", Duration.ofSeconds(60));
-
         if (!canSend) throw new ApiException(ErrorCode.TOO_MANY_OTP_REQUESTS);
+
         redisService.setIfAbsentWithTTL(sendCountKey, "0", Duration.ofHours(1));
 
         if (redisService.increment(sendCountKey) > 5) throw new ApiException(ErrorCode.TOO_MANY_OTP_REQUESTS);
+
+        if (!userRepository.existsByEmail(email)) {
+            return;
+        }
 
         String otp = generateOtp();
         saveOtp(emailKey, otp);

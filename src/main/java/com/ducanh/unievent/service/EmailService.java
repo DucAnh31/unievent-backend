@@ -33,6 +33,7 @@ public class EmailService {
         String verificationLink = frontendBaseUrl + "/verify-email?token=" + token;
 
         SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(sender);
         message.setTo(email);
         message.setSubject("UniEvent - Xác minh địa chỉ email");
         message.setText(

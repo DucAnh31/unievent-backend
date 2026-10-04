@@ -20,11 +20,9 @@ import com.ducanh.unievent.repository.EventCategoryRepository;
 import com.ducanh.unievent.repository.EventRepository;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class EventCategoryService {
     private final EventCategoryRepository eventCategoryRepository;
     private final EventCategoryMapper eventCategoryMapper;

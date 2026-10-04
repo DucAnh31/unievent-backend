@@ -51,7 +51,7 @@ public class AdminUserService {
 
         User user = userRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        if (currentUser.getId() == user.getId()) throw new ApiException(ErrorCode.CANNOT_MODIFY_YOURSELF);
+        if (currentUser.getId().equals(user.getId())) throw new ApiException(ErrorCode.CANNOT_MODIFY_YOURSELF);
         if (user.getRole() == UserRole.ADMIN) throw new ApiException(ErrorCode.CANNOT_MODIFY_OTHER_ADMIN);
 
         user.setStatus(request.getStatus());
@@ -65,7 +65,7 @@ public class AdminUserService {
 
         User user = userRepository.findById(id).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
-        if (currentUser.getId() == user.getId()) throw new ApiException(ErrorCode.CANNOT_MODIFY_YOURSELF);
+        if (currentUser.getId().equals(user.getId())) throw new ApiException(ErrorCode.CANNOT_MODIFY_YOURSELF);
         if (user.getRole() == UserRole.ADMIN) throw new ApiException(ErrorCode.CANNOT_MODIFY_OTHER_ADMIN);
 
         user.setRole(request.getRole());

@@ -13,6 +13,9 @@ public interface EventRegistrationMapper {
 
     @Mapping(target = "eventId", source = "event.id")
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "studentCode", source = "user.studentCode")
+    @Mapping(target = "studentName", source = "user.fullName")
+    @Mapping(target = "eventTitle", source = "event.title")
     public EventRegistrationResponse toRegistrationEventResponse(Registration registration);
 
     public List<EventRegistrationResponse> toListEventRegistrationResponse(List<Registration> registrations);

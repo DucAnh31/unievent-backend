@@ -32,8 +32,6 @@ public interface EventRegistrationRepository
 
     public Optional<Registration> findByEvent_IdAndCheckInCode(Long eventId, String checkInCode);
 
-    public Long countByEvent_IdAndStatus(Long eventId, RegistrationStatus status);
-
     @EntityGraph(attributePaths = {"user", "event"})
     @Override
     Page<Registration> findAll(Specification<Registration> spec, Pageable pageable);

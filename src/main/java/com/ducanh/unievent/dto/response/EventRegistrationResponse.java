@@ -21,6 +21,10 @@ public class EventRegistrationResponse {
     private Instant registeredAt;
     private Instant cancelledAt;
 
+    private String eventTitle;
     private Long eventId;
+
+    private String studentName;
+    private String studentCode;
     private Long userId;
 }

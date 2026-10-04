@@ -16,4 +16,6 @@ public interface CheckInRepository extends JpaRepository<CheckIn, Long> {
     public Page<CheckIn> findByRegistration_Event_Id(Long eventId, Pageable pageable);
 
     public Long countByRegistration_Event_Id(Long eventId);
+
+    public Boolean existsByRegistration_Id(Long registrationId);
 }

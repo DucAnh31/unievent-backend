@@ -59,11 +59,11 @@ public class Event {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "event_category_id", nullable = false)
     private EventCategory category;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "organizer_id", nullable = false)
     private User organizer;
 }

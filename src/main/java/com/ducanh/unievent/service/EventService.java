@@ -28,11 +28,9 @@ import com.ducanh.unievent.security.SecurityHelper;
 import com.ducanh.unievent.specification.EventSpecification;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class EventService {
     private final EventMapper eventMapper;
     private final EventRepository eventRepository;
@@ -62,9 +60,6 @@ public class EventService {
     }
 
     public Page<EventResponse> getMyEvents(EventFilterRequest filter, int page, int size, String sort) {
-        if (page < 0 || size < 1 || size > 50) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
 
         if (filter.getFrom() != null
                 && filter.getTo() != null
@@ -95,8 +90,7 @@ public class EventService {
                 .findByIdAndOrganizerId(eventId, organizer.getId())
                 .orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if (event.getStatus() != EventStatus.DRAFT && event.getStatus() != EventStatus.PUBLISHED)
-            throw new ApiException(ErrorCode.EVENT_CANNOT_BE_UPDATED);
+        if (event.getStatus() != EventStatus.DRAFT) throw new ApiException(ErrorCode.EVENT_CANNOT_BE_UPDATED);
 
         validateEventTime(request.getStartTime(), request.getEndTime(), request.getRegistrationDeadline());
 
@@ -190,13 +184,10 @@ public class EventService {
     }
 
     public Page<EventResponse> getPublicEvents(EventFilterRequest filter, int page, int size, String sort) {
-        if (page < 0 || size < 1 || size > 50) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
 
         if (filter.getStatuses() != null
-                && filter.getStatuses().contains(EventStatus.DRAFT)
-                && filter.getStatuses().contains(EventStatus.PENDING_APPROVAL))
+                && (filter.getStatuses().contains(EventStatus.DRAFT)
+                        || filter.getStatuses().contains(EventStatus.PENDING_APPROVAL)))
             throw new ApiException(ErrorCode.VALIDATION_ERROR);
 
         if (filter.getFrom() != null
@@ -213,9 +204,6 @@ public class EventService {
     }
 
     public Page<EventResponse> getAdminEvents(EventFilterRequest filter, int page, int size, String sort) {
-        if (page < 0 || size < 1 || size > 50) {
-            throw new ApiException(ErrorCode.VALIDATION_ERROR);
-        }
 
         if (filter.getFrom() != null
                 && filter.getTo() != null
@@ -231,7 +219,7 @@ public class EventService {
     }
 
     private void validateEventTime(Instant start, Instant end, Instant registrationDeadline) {
-        if (!start.isBefore(end) || !start.isAfter(registrationDeadline))
+        if (!start.isBefore(end) || registrationDeadline.isAfter(start))
             throw new ApiException(ErrorCode.INVALID_EVENT_TIME);
     }
 
@@ -246,7 +234,7 @@ public class EventService {
                 .checkedInCount(checkInRepository.countByRegistration_Event_Id(eventId))
                 .maxParticipants(event.getMaxParticipants())
                 .registeredCount(
-                        eventRegistrationRepository.countByEvent_IdAndStatus(eventId, RegistrationStatus.REGISTERED))
+                        eventRegistrationRepository.countByEvent_idAndStatus(eventId, RegistrationStatus.REGISTERED))
                 .build();
     }
 
@@ -266,11 +254,11 @@ public class EventService {
     public EventResponse rejectEvent(Long eventId) {
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new ApiException(ErrorCode.EVENT_NOT_FOUND));
 
-        if (event.getStatus() != EventStatus.PENDING_APPROVAL
-                || !Instant.now().isBefore(event.getRegistrationDeadline()))
+        if (event.getStatus() != EventStatus.PENDING_APPROVAL)
             throw new ApiException(ErrorCode.EVENT_CANNOT_BE_REJECTED);
 
         event.setStatus(EventStatus.DRAFT);
+
         return eventMapper.toEventResponse(eventRepository.save(event));
     }
 }

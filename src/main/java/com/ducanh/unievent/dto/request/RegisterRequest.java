@@ -2,6 +2,7 @@ package com.ducanh.unievent.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
@@ -20,6 +21,9 @@ public class RegisterRequest {
 
     @NotBlank(message = "Username must not be blank")
     @Size(max = 200, message = "Username must not exceed 200 characters")
+    @Pattern(
+            regexp = "[A-Za-z0-9._-]+",
+            message = "Username may only contain letters, digits, dots, underscores and hyphens")
     private String username;
 
     @NotBlank(message = "Email must not be blank")

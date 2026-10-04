@@ -1,0 +1,7 @@
+DBMS_USERNAME=your_mysql_username
+DBMS_PASSWORD=your_mysql_password
+DBMS_ROOT_PASSWORD=your_mysql_root_password
+EMAIL_USERNAME=you@example.com
+EMAIL_PASSWORD=your_email_app_password
+JWT_SECRET_KEY=your_secret_key
+FRONTEND_BASE_URL=your_fe_base_url
