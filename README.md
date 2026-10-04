@@ -38,12 +38,17 @@ UniEvent is a basic university event management platform for students, event org
 - Docker Engine and Docker Compose
 - SMTP credentials
 
-Run the following commands from the repository root, where `compose.yaml`, `Dockerfile`, and `pom.xml` are located.
+Run the following commands from the repository root, where `docker-compose.yml`, `Dockerfile`, and `pom.xml` are located.
 
 ### 1. Configure the environment
 
-Create a `.env` file in the repository root, example `.env`:
+Copy the example configuration to a new `.env` file in the repository root:
 
+```bash
+cp .env.example .env
+```
+
+Open `.env` and replace the placeholder values with your own:
 
 ```dotenv
 DBMS_USERNAME=your_mysql_username
