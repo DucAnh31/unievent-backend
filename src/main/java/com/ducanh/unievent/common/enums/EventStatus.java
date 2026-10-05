@@ -1,0 +1,9 @@
+package com.ducanh.unievent.common.enums;
+
+public enum EventStatus {
+    DRAFT, // sua
+    PUBLISHED, // sua
+    PENDING_APPROVAL,
+    REGISTRATION_CLOSED,
+    CANCELLED
+}

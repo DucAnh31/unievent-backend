@@ -1,0 +1,42 @@
+name: unievent
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      DBMS_CONNECTION: jdbc:mysql://db:3306/unievent
+      DBMS_USERNAME: ${DBMS_USERNAME}
+      DBMS_PASSWORD: ${DBMS_PASSWORD}
+      EMAIL_USERNAME: ${EMAIL_USERNAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      REDIS_HOST: redis
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: unievent
+      MYSQL_USER: ${DBMS_USERNAME}
+      MYSQL_PASSWORD: ${DBMS_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DBMS_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    ports:
+      - "6379:6379"
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+volumes:
+  mysql_data:
+  redis_data:
