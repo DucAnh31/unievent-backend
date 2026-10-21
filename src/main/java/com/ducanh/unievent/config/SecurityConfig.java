@@ -1,4 +1,4 @@
-package com.ducanh.unievent.Config;
+package com.ducanh.unievent.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,13 +1,13 @@
-# 🎓 UniEvent 
+# UniEvent
 
 **University event management API built with Java and Spring Boot.**
 
 UniEvent is a basic university event management platform for students, event organizers, and administrators. It brings common event activities into one place, including viewing events, managing registrations, and recording attendance.
-## ✨ Features
+## Features
 
 | Area | Capabilities                                                                                                                                            |
 | --- |---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Authentication | Registration, email verification, login, JWT access and refresh tokens, refresh token rotation, logout, and password recovery via email OTP.            |
+| Authentication | Registration, email verification, login, JWT access tokens, refresh tokens managed via HttpOnly cookies with rotation, logout, and password recovery via email OTP. |
 | Students | Browse and filter events, register or cancel, view registrations, retrieve a check-in code, and check attendance status.                                |
 | Organizers | Create and manage their own events, submit them for approval, close registration, cancel events, update events, check students in, and view statistics. |
 | Administrators | Approve, reject, and cancel events; manage categories, user roles, and account statuses.                                                                |
@@ -20,7 +20,7 @@ UniEvent is a basic university event management platform for students, event org
 4. The student retrieves a check-in code. A client can render that code as a QR code.
 5. The organizer validates the code and records one check-in for the registration.
 
-## 🧰 Tech stack
+## Tech stack
 
 | Layer | Technologies |
 | --- | --- |
@@ -31,7 +31,7 @@ UniEvent is a basic university event management platform for students, event org
 | Build and runtime | Maven, Docker, Docker Compose |
 
 
-## 🚀 Getting started
+## Getting started
 
 ### Prerequisites
 
@@ -58,6 +58,8 @@ EMAIL_USERNAME=you@example.com
 EMAIL_PASSWORD=your_email_app_password
 JWT_SECRET_KEY=your_secret_key
 FRONTEND_BASE_URL=your_fe_base_url
+# Required: false for local HTTP; true for production HTTPS.
+AUTH_COOKIE_SECURE=false
 ```
 
 ### 2. Start the services
@@ -68,7 +70,7 @@ docker compose up --build -d
 
 The API is available at http://localhost:8080. Within the Compose network, the app connects to MySQL at db:3306 and Redis at redis:6379.
 
-## 📚 API overview
+## API overview
 
 All endpoints start with `/api/v1`. Protected endpoints require `Authorization: Bearer <access_token>`.
 
@@ -79,9 +81,9 @@ All endpoints start with `/api/v1`. Protected endpoints require `Authorization: 
 | `POST` | `/auth/register` | Create a student account |
 | `POST` | `/auth/email/verify` | Verify an email address |
 | `POST` | `/auth/email/verification-resend` | Request another verification email |
-| `POST` | `/auth/login` | Obtain access and refresh tokens |
-| `POST` | `/auth/refresh` | Rotate a refresh token |
-| `POST` | `/auth/logout` | Revoke the current refresh token |
+| `POST` | `/auth/login` | Return an access token and set the refresh token cookie |
+| `POST` | `/auth/refresh` | Read and rotate the refresh token cookie; return a new access token |
+| `POST` | `/auth/logout` | Revoke the refresh token and clear its cookie |
 | `POST` | `/auth/password/forgot` | Request a password recovery OTP |
 | `POST` | `/auth/password/otp/verify` | Verify the OTP and obtain a password reset token |
 | `POST` | `/auth/password/reset` | Set a new password |

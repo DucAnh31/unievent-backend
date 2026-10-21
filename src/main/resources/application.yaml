@@ -33,3 +33,7 @@ jwt:
 
 app:
   frontend-base-url: ${FRONTEND_BASE_URL}
+  auth:
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE}
+      same-site: Lax

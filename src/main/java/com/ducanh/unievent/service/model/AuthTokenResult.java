@@ -1,6 +1,4 @@
-package com.ducanh.unievent.dto.request;
-
-import jakarta.validation.constraints.NotBlank;
+package com.ducanh.unievent.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class LogoutRequest {
-    @NotBlank(message = "Refresh token must not be blank")
+public class AuthTokenResult {
+    private String accessToken;
     private String refreshToken;
 }
