@@ -19,7 +19,6 @@ import com.ducanh.unievent.common.enums.UserStatus;
 import com.ducanh.unievent.common.service.RedisService;
 import com.ducanh.unievent.common.util.Sha256Util;
 import com.ducanh.unievent.dto.request.*;
-import com.ducanh.unievent.dto.response.AuthenticationResponse;
 import com.ducanh.unievent.dto.response.VerifyPasswordResponse;
 import com.ducanh.unievent.entity.User;
 import com.ducanh.unievent.exception.ApiException;
@@ -30,6 +29,7 @@ import com.ducanh.unievent.security.custom.CustomUserDetails;
 import com.ducanh.unievent.security.custom.CustomUserDetailsService;
 import com.ducanh.unievent.security.jwt.JwtService;
 import com.ducanh.unievent.security.service.RefreshTokenService;
+import com.ducanh.unievent.service.model.AuthTokenResult;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,7 +57,7 @@ public class AuthService {
     private static final String EMAIL_VERIFY_COOLDOWN_KEY_PREFIX = "auth:email:verify:cooldown:";
     private static final String EMAIL_VERIFY_SEND_COUNT_KEY_PREFIX = "auth:email:verify:send-count:";
 
-    public AuthenticationResponse login(LoginRequest request) {
+    public AuthTokenResult login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getIdentifier(), request.getPassword()));
 
@@ -70,7 +70,7 @@ public class AuthService {
         String accessToken = jwtService.generateToken(userDetails);
         String refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
-        return AuthenticationResponse.builder()
+        return AuthTokenResult.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
@@ -147,8 +147,10 @@ public class AuthService {
         emailService.sendVerificationEmail(user.getEmail(), token);
     }
 
-    public AuthenticationResponse refreshToken(RefreshTokenRequest request) {
-        Long userId = refreshTokenService.verifyAndGetUserId(request.getToken());
+    public AuthTokenResult refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) throw new ApiException(ErrorCode.REFRESH_TOKEN_NOT_FOUND);
+
+        Long userId = refreshTokenService.verifyAndGetUserId(refreshToken);
 
         User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.USER_NOT_FOUND));
 
@@ -158,16 +160,21 @@ public class AuthService {
         if (!userDetails.isEmailVerified()) throw new ApiException(ErrorCode.EMAIL_NOT_VERIFIED);
 
         String newAccessToken = jwtService.generateToken(userDetails);
-        String newRefreshToken = refreshTokenService.rotateRefreshToken(request.getToken(), userId);
+        String newRefreshToken = refreshTokenService.rotateRefreshToken(refreshToken, userId);
 
-        return AuthenticationResponse.builder()
+        return AuthTokenResult.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .build();
     }
 
-    public void logout(LogoutRequest request) {
-        refreshTokenService.revokeToken(request.getRefreshToken());
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) return;
+        try {
+            refreshTokenService.revokeToken(refreshToken);
+        } catch (ApiException e) {
+            if (e.getErrorCode() != ErrorCode.REFRESH_TOKEN_NOT_FOUND) throw e;
+        }
     }
 
     private String generateOtp() {

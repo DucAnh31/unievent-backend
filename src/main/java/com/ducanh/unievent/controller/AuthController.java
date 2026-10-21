@@ -2,18 +2,18 @@ package com.ducanh.unievent.controller;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.ducanh.unievent.common.ApiResponse;
 import com.ducanh.unievent.dto.request.*;
 import com.ducanh.unievent.dto.response.AuthenticationResponse;
 import com.ducanh.unievent.dto.response.VerifyPasswordResponse;
+import com.ducanh.unievent.security.service.RefreshTokenCookieService;
 import com.ducanh.unievent.service.AuthService;
+import com.ducanh.unievent.service.model.AuthTokenResult;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RefreshTokenCookieService refreshTokenCookieService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
@@ -31,19 +32,41 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(authService.login(request)));
+
+        return authenticationResponse(authService.login(request));
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> refreshToken(
-            @Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(authService.refreshToken(request)));
+            @CookieValue(name = RefreshTokenCookieService.COOKIE_NAME, required = false) String refreshToken) {
+        return authenticationResponse(authService.refreshToken(refreshToken));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@Valid @RequestBody LogoutRequest request) {
-        authService.logout(request);
-        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(null));
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @CookieValue(name = RefreshTokenCookieService.COOKIE_NAME, required = false) String refreshToken) {
+
+        authService.logout(refreshToken);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        refreshTokenCookieService.clear().toString())
+                .body(ApiResponse.success(null));
+    }
+
+    private ResponseEntity<ApiResponse<AuthenticationResponse>> authenticationResponse(AuthTokenResult tokens) {
+        AuthenticationResponse response = AuthenticationResponse.builder()
+                .accessToken(tokens.getAccessToken())
+                .build();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        refreshTokenCookieService
+                                .create(tokens.getRefreshToken())
+                                .toString())
+                .body(ApiResponse.success(response));
     }
 
     // forgot password

@@ -12,6 +12,7 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE}
       REDIS_HOST: redis
     depends_on:
       - db
